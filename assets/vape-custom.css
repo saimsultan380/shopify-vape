@@ -45,12 +45,18 @@
    3. HEADER — Clean White Background & Dark Navigation Links
    ================================================================ */
 
-/* ── Header wrapper ── */
+/* ── Header wrapper (Horizon default header only; skip custom .vmh) ── */
 header-component,
 .header-section,
 .header-section .header {
   background-color: #ffffff !important;
   border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+/* Ensure mega header keeps its own designed background */
+header.vmh,
+.vmh.vmh--sticky {
+  background: var(--vmh-bg, #0a0a0a) !important;
 }
 
 .header__row--top,
@@ -214,11 +220,13 @@ header-component[sticky] .header {
 
 .cart-item__name,
 .cart-item__title,
-.price {
+.cart-drawer .price,
+.cart-drawer .cart-item__price {
   color: #111111 !important;
 }
 
-.cart-item__price-wrapper .price--sale {
+.cart-item__price-wrapper .price--sale,
+.cart-drawer .price--sale {
   color: var(--vape-accent) !important;
 }
 
@@ -278,7 +286,7 @@ body {
    ================================================================ */
 .button,
 .btn,
-button[type="submit"]:not([class*="vhs"]) {
+button[type="submit"]:not([class*="vhs"]):not([class*="vnl"]):not([class*="vc-"]):not([class*="vpp-"]):not([class*="vcp-"]):not([class*="vf-"]) {
   font-family: var(--vape-font-primary);
   letter-spacing: 0.05em;
 }
@@ -302,11 +310,11 @@ button[type="submit"]:not([class*="vhs"]) {
 
 
 /* ================================================================
-   9. PRODUCT CARDS — Clean light cards
+   9. PRODUCT CARDS — Clean light cards (theme cards only)
    ================================================================ */
 .product-card,
 .card-wrapper,
-.card {
+.card:not(.vfp-card):not(.vc-rec):not(.vpp-review-card) {
   background: #ffffff;
   border: 1px solid #eeeeee;
   transition: border-color var(--vape-transition-normal), box-shadow var(--vape-transition-normal);
@@ -314,7 +322,7 @@ button[type="submit"]:not([class*="vhs"]) {
 
 .product-card:hover,
 .card-wrapper:hover,
-.card:hover {
+.card:not(.vfp-card):not(.vc-rec):hover {
   border-color: #e0e0e0;
   box-shadow: 0 10px 25px rgba(0,0,0,0.06);
 }
@@ -341,9 +349,7 @@ button[type="submit"]:not([class*="vhs"]) {
    ================================================================ */
 .section-header h2,
 .section-header h3,
-.section__heading,
-[class*="section"] > h2,
-[class*="section"] > h3 {
+.section__heading {
   font-family: var(--vape-font-primary);
   font-weight: 800;
   color: #111111;
@@ -353,13 +359,14 @@ button[type="submit"]:not([class*="vhs"]) {
 
 /* ================================================================
    11. FORMS & INPUTS
+   (Scoped away from custom vape section controls)
    ================================================================ */
-input[type="text"],
-input[type="email"],
-input[type="search"],
-input[type="password"],
-textarea,
-select {
+input[type="text"]:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):not([class*="vmh"]),
+input[type="email"]:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):not([class*="vmh"]),
+input[type="search"]:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):not([class*="vmh"]),
+input[type="password"]:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):not([class*="vmh"]),
+textarea:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):not([class*="vmh"]),
+select:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):not([class*="vmh"]) {
   background: #f9f9f9 !important;
   border-color: rgba(0,0,0,0.12) !important;
   color: #111111 !important;
@@ -368,26 +375,26 @@ select {
   transition: border-color var(--vape-transition-fast), box-shadow var(--vape-transition-fast);
 }
 
-input[type="text"]:focus,
-input[type="email"]:focus,
-input[type="search"]:focus,
-textarea:focus {
+input[type="text"]:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):focus,
+input[type="email"]:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):focus,
+input[type="search"]:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):focus,
+textarea:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"]):focus {
   border-color: #111111 !important;
   outline: none !important;
   box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.2) !important;
 }
 
-input::placeholder,
-textarea::placeholder {
+input:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"])::placeholder,
+textarea:not([class*="vnl"]):not([class*="vpp"]):not([class*="vcp"]):not([class*="vc-"])::placeholder {
   color: #888888 !important;
 }
 
 
 /* ================================================================
-   12. FOOTER — Light footer
+   12. FOOTER — Light footer (theme default only; exclude .vf)
    ================================================================ */
-.footer,
-footer {
+.footer:not(.vf),
+footer:not(.vf):not(.section-vape-footer) {
   background: #f8f8f8 !important;
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
@@ -402,8 +409,8 @@ footer {
   text-transform: uppercase;
 }
 
+.footer:not(.vf) a,
 .footer__link,
-.footer a,
 .footer-block a {
   color: #555555 !important;
   font-family: var(--vape-font-primary);
@@ -412,8 +419,8 @@ footer {
   text-decoration: none;
 }
 
+.footer:not(.vf) a:hover,
 .footer__link:hover,
-.footer a:hover,
 .footer-block a:hover {
   color: var(--vape-accent) !important;
 }
@@ -426,15 +433,96 @@ footer {
 
 
 /* ================================================================
-   13. VAPE NEWSLETTER + FOOTER — keep theme overrides from
-       fighting the custom underline/form styles
+   13. VAPE CUSTOM SECTIONS — isolation from global overrides
    ================================================================ */
+
+/* Newsletter underline field */
 .section-vape-newsletter .vnl__input,
 .section-vape-newsletter .vnl__input:focus {
   background: transparent !important;
+  border: 0 !important;
+  border-bottom: 1px solid #cfcfcf !important;
   border-radius: 0 !important;
+  box-shadow: none !important;
 }
 
-.section-vape-footer {
-  background: #f2f2f2;
+.section-vape-newsletter .vnl__input:focus {
+  border-bottom-color: #111 !important;
+}
+
+.section-vape-newsletter .vnl__submit {
+  background: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+}
+
+/* Footer — win over any global footer rules */
+.shopify-section.section-vape-footer,
+.section-vape-footer,
+.section-vape-footer footer.vf,
+footer.vf {
+  background: #f5f5f5 !important;
+  border-top: 0 !important;
+}
+
+.section-vape-footer .vf a,
+.section-vape-footer .vf__links a,
+.section-vape-footer .vf__contact a,
+.section-vape-footer .vf__social a {
+  color: inherit;
+  text-decoration: none !important;
+  font-size: inherit;
+}
+
+.section-vape-footer .vf__links a {
+  color: var(--vf-text, #666) !important;
+}
+
+.section-vape-footer .vf__links a:hover,
+.section-vape-footer .vf__contact a:hover {
+  color: #111 !important;
+}
+
+.section-vape-footer .vf__top {
+  border-radius: 50% !important;
+  letter-spacing: 0 !important;
+}
+
+/* Cart / product / collection qty + actions */
+.section-vape-cart .vc-qty__input,
+.section-vape-cart .vc-qty__input:focus,
+.section-vape-product-page .vpp-qty__input,
+.section-vape-product-page .vpp-qty__input:focus,
+.section-vape-collection .vcp-price__num,
+.section-vape-collection .vcp-price__num:focus,
+.section-vape-collection .vcp-sort select,
+.section-vape-collection .vcp-sort select:focus {
+  background: #fff !important;
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+.section-vape-collection .vcp-sort select {
+  background: transparent !important;
+  border: 0 !important;
+}
+
+.section-vape-cart .vc-btn,
+.section-vape-product-page .vpp-atc,
+.section-vape-collection .vcp-loadmore__btn,
+.section-vape-collection .vcp-clear-all,
+.section-vape-collection .vcp-mobile-filter-btn {
+  letter-spacing: 0.06em;
+}
+
+/* Product cards used across featured / collection / recently viewed */
+.vfp-card,
+.vcp-grid .vfp-card {
+  background: #ffffff;
+}
+
+/* Avoid theme .card hover rules if any wrapper shares naming */
+.vfp-card.card,
+.vcp-grid .card {
+  box-shadow: none;
 }

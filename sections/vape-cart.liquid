@@ -778,9 +778,13 @@
 
   const freeShipThreshold = parseInt(root.dataset.freeShipping || '0', 10);
   const moneyFormat = root.dataset.moneyFormat || '${{amount}}';
-  const cartChangeUrl = (window.Theme?.routes?.cart_change_url || '/cart/change') + '.js';
-  const cartUpdateUrl = (window.Theme?.routes?.cart_update_url || '/cart/update') + '.js';
-  const cartUrl = (window.Theme?.routes?.cart_url || '/cart') + '.js';
+  const rootPath = (window.Shopify && window.Shopify.routes && window.Shopify.routes.root) || '/';
+
+  function cartJsUrl(themeKey, fallbackPath) {
+    const fromTheme = window.Theme && window.Theme.routes && window.Theme.routes[themeKey];
+    if (fromTheme) return fromTheme.endsWith('.js') ? fromTheme : fromTheme + '.js';
+    return rootPath.replace(/\/?$/, '/') + fallbackPath;
+  }
 
   function formatMoney(cents) {
     const amount = (Number(cents) / 100).toFixed(2);
@@ -842,7 +846,7 @@
   async function changeLine(key, quantity, row) {
     row?.classList.add('is-updating');
     try {
-      const res = await fetch(cartChangeUrl, {
+      const res = await fetch(cartJsUrl('cart_change_url', 'cart/change.js'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ id: key, quantity: quantity })
@@ -906,7 +910,7 @@
   root.querySelector('[data-vc-note]')?.addEventListener('input', (e) => {
     clearTimeout(noteTimer);
     noteTimer = setTimeout(() => {
-      fetch(cartUpdateUrl, {
+      fetch(cartJsUrl('cart_update_url', 'cart/update.js'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ note: e.target.value })

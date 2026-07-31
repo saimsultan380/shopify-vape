@@ -1183,17 +1183,15 @@
     if (!filterForm) return;
     const data = new FormData(filterForm);
     const url = new URL(window.location.href);
-    /* Clear existing filter params, keep sort */
     const sort = url.searchParams.get('sort_by');
-    [...url.searchParams.keys()].forEach((k) => {
-      if (k.startsWith('filter.') || k === 'page') url.searchParams.delete(k);
-    });
+    /* Drop old filter/page params without mutating while iterating */
+    const keep = new URLSearchParams();
+    if (sort) keep.set('sort_by', sort);
     for (const [key, value] of data.entries()) {
       if (value === '' || value == null) continue;
-      url.searchParams.append(key, value);
+      keep.append(key, value);
     }
-    if (sort) url.searchParams.set('sort_by', sort);
-    window.location.href = url.toString();
+    window.location.href = url.pathname + (keep.toString() ? '?' + keep.toString() : '');
   }
 
   filterForm?.querySelectorAll('input[type="checkbox"]').forEach((input) => {

@@ -1,0 +1,668 @@
+{%- comment -%}
+  ============================================================
+  Vape Trust Strip — sections/vape-trust-strip.liquid
+
+  Premium horizontal trust-badges row for e-commerce vape stores.
+  Features:
+  • Up to 6 trust blocks (icon + heading + description)
+  • 10 built-in SVG icon options per block
+  • Configurable icon background colour / style (solid, gradient, outline)
+  • Hover: icon lifts + scales, text brightens
+  • Desktop: 4-col row with subtle dividers
+  • Tablet: 2×2 grid  |  Mobile: 1-col stack
+  • Optional section heading above the strip
+  • Full Theme Customizer support (all text, colours, icons, spacing)
+  ============================================================
+{%- endcomment -%}
+
+{%- comment -%} Icon map — inline SVG paths keyed by id ─── {%- endcomment -%}
+{%- liquid
+  assign icon_delivery    = '<path d="M1 3h13v9H1zM14 8h4l2 3v3h-2m0 0a2 2 0 11-4 0m4 0a2 2 0 01-4 0M3 17a2 2 0 100-4 2 2 0 000 4z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_shield      = '<path d="M12 2L3 6v5c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V6l-9-4z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12l2 2 4-4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_support     = '<path d="M3 18v-6a9 9 0 0118 0v6" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M21 19a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3v5zM3 19a2 2 0 002 2h1a2 2 0 002-2v-3a2 2 0 00-2-2H3v5z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_returns     = '<path d="M3 12a9 9 0 109-9 9.75 9.75 0 00-6.74 2.74L3 8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 3v5h5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_star        = '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_lock        = '<rect x="3" y="11" width="18" height="11" rx="2" ry="2" stroke-width="1.6"/><path d="M7 11V7a5 5 0 0110 0v4" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_gift        = '<polyline points="20 12 20 22 4 22 4 12" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><rect x="2" y="7" width="20" height="5" rx="1" stroke-width="1.6"/><line x1="12" y1="22" x2="12" y2="7" stroke-width="1.6" stroke-linecap="round"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7zM12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_leaf        = '<path d="M2 22l10-10M16 12c0 5.523-4.477 10-10 10C6 16.477 10.477 12 16 12z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M22 2C14 4 8 10 6 22 10 10 16 4 22 2z" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_award       = '<circle cx="12" cy="8" r="6" stroke-width="1.6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+  assign icon_zap         = '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ section.settings.section_bg }};
+    padding-block-start: {{ section.settings.padding_top }}px;
+    padding-block-end: {{ section.settings.padding_bottom }}px;
+  }
+
+  #vts-{{ section.id }} {
+    --vts-icon-bg:      {{ section.settings.icon_bg_color }};
+    --vts-icon-color:   {{ section.settings.icon_color }};
+    --vts-text-color:   {{ section.settings.text_color }};
+    --vts-sub-color:    {{ section.settings.subtext_color }};
+    --vts-divider:      {{ section.settings.divider_color }};
+    --vts-card-bg:      {{ section.settings.card_bg }};
+    --vts-card-radius:  {{ section.settings.card_radius }}px;
+    --vts-icon-size:    {{ section.settings.icon_size }}px;
+    --vts-cols:         {{ section.blocks.size | at_most: 6 }};
+  }
+{% endstyle %}
+
+<div id="vts-{{ section.id }}" class="vts-wrapper page-width">
+
+  {%- comment -%} ── Optional section heading ── {%- endcomment -%}
+  {%- if section.settings.section_title != blank -%}
+    <div class="vts-heading-wrap">
+      <h2 class="vts-section-title">{{ section.settings.section_title | escape }}</h2>
+      {%- if section.settings.section_subtitle != blank -%}
+        <p class="vts-section-subtitle">{{ section.settings.section_subtitle | escape }}</p>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Trust strip grid ── {%- endcomment -%}
+  <div class="vts-strip vts-style-{{ section.settings.card_style }}">
+    {%- for block in section.blocks -%}
+      {%- liquid
+        case block.settings.icon
+          when 'delivery'
+            assign svg_paths = icon_delivery
+          when 'shield'
+            assign svg_paths = icon_shield
+          when 'support'
+            assign svg_paths = icon_support
+          when 'returns'
+            assign svg_paths = icon_returns
+          when 'star'
+            assign svg_paths = icon_star
+          when 'lock'
+            assign svg_paths = icon_lock
+          when 'gift'
+            assign svg_paths = icon_gift
+          when 'leaf'
+            assign svg_paths = icon_leaf
+          when 'award'
+            assign svg_paths = icon_award
+          when 'zap'
+            assign svg_paths = icon_zap
+          else
+            assign svg_paths = icon_shield
+        endcase
+
+        assign icon_accent = block.settings.icon_accent_color | default: section.settings.icon_bg_color
+        assign icon_c = block.settings.icon_svg_color | default: section.settings.icon_color
+      -%}
+
+      <div
+        class="vts-item"
+        {{ block.shopify_attributes }}
+      >
+        {%- comment -%} Wrap in link if URL set {%- endcomment -%}
+        {%- if block.settings.link != blank -%}
+          <a href="{{ block.settings.link }}" class="vts-item-link" aria-label="{{ block.settings.title | escape }}">
+        {%- endif -%}
+
+        {%- comment -%} Icon bubble ── {%- endcomment -%}
+        <div
+          class="vts-icon-wrap{% if block.settings.icon_style == 'gradient' %} vts-icon--gradient{% elsif block.settings.icon_style == 'outline' %} vts-icon--outline{% else %} vts-icon--solid{% endif %}"
+          style="
+            --item-icon-bg: {{ icon_accent }};
+            --item-icon-color: {{ icon_c }};
+          "
+        >
+          <svg
+            class="vts-icon-svg"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            {{ svg_paths }}
+          </svg>
+        </div>
+
+        {%- comment -%} Text ── {%- endcomment -%}
+        <div class="vts-text">
+          {%- if block.settings.title != blank -%}
+            <p class="vts-title">{{ block.settings.title | escape }}</p>
+          {%- endif -%}
+          {%- if block.settings.description != blank -%}
+            <p class="vts-desc">{{ block.settings.description | escape }}</p>
+          {%- endif -%}
+        </div>
+
+        {%- if block.settings.link != blank -%}
+          </a>
+        {%- endif -%}
+
+        {%- comment -%} Divider (not on last item) ── {%- endcomment -%}
+        {%- unless forloop.last -%}
+          <div class="vts-divider" aria-hidden="true"></div>
+        {%- endunless -%}
+      </div>
+    {%- endfor -%}
+  </div>
+
+</div>
+
+<style>
+  /* ============================================================
+     VAPE TRUST STRIP (vts) STYLES
+  ============================================================ */
+
+  .vts-wrapper {
+    margin-inline: auto;
+  }
+
+  /* ── Optional heading ── */
+  .vts-heading-wrap {
+    text-align: center;
+    margin-bottom: 2.5rem;
+  }
+
+  .vts-section-title {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: clamp(1.4rem, 2.5vw, 2rem);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--vts-text-color, #111);
+    margin: 0 0 0.5rem;
+  }
+
+  .vts-section-subtitle {
+    font-size: 0.95rem;
+    color: var(--vts-sub-color, #666);
+    margin: 0;
+  }
+
+  /* ── Grid strip ── */
+  .vts-strip {
+    display: grid;
+    grid-template-columns: repeat(var(--vts-cols, 4), 1fr);
+    gap: 0;
+    position: relative;
+  }
+
+  /* ── Single item ── */
+  .vts-item {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 2rem 1.5rem;
+    gap: 1rem;
+    transition: background 0.25s ease;
+  }
+
+  .vts-item-link {
+    display: contents;
+    text-decoration: none;
+    color: inherit;
+  }
+
+  /* Hover background tint */
+  .vts-item:has(.vts-item-link):hover {
+    background: rgba(0,0,0,0.03);
+    border-radius: var(--vts-card-radius, 8px);
+  }
+
+  /* ─── CARD STYLE: default (no card bg, dividers) ─── */
+  .vts-style-strip .vts-item {
+    background: transparent;
+  }
+
+  /* ─── CARD STYLE: bordered ─── */
+  .vts-style-card .vts-strip {
+    gap: 1rem;
+  }
+
+  .vts-style-card .vts-item {
+    background: var(--vts-card-bg, #f9f9f9);
+    border-radius: var(--vts-card-radius, 10px);
+    border: 1px solid rgba(0,0,0,0.07);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease;
+  }
+
+  .vts-style-card .vts-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 28px rgba(0,0,0,0.1);
+  }
+
+  /* Hide dividers in card style */
+  .vts-style-card .vts-divider { display: none; }
+
+  /* ─── CARD STYLE: glass ─── */
+  .vts-style-glass .vts-strip {
+    gap: 1rem;
+    background: transparent;
+  }
+
+  .vts-style-glass .vts-item {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: var(--vts-card-radius, 10px);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), background 0.3s ease;
+  }
+
+  .vts-style-glass .vts-item:hover {
+    transform: translateY(-4px);
+    background: rgba(255,255,255,0.14);
+  }
+
+  .vts-style-glass .vts-divider { display: none; }
+
+  .vts-style-glass .vts-title { color: #ffffff; }
+  .vts-style-glass .vts-desc  { color: rgba(255,255,255,0.72); }
+
+  /* ── Vertical divider (strip style) ── */
+  .vts-divider {
+    position: absolute;
+    right: 0;
+    top: 20%;
+    height: 60%;
+    width: 1px;
+    background: var(--vts-divider, rgba(0,0,0,0.1));
+    pointer-events: none;
+  }
+
+  /* ── Icon wrapper ── */
+  .vts-icon-wrap {
+    width: var(--vts-icon-size, 64px);
+    height: var(--vts-icon-size, 64px);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  /* Solid icon style */
+  .vts-icon--solid {
+    background: var(--item-icon-bg, var(--vts-icon-bg, #f0f0f0));
+    color: var(--item-icon-color, var(--vts-icon-color, #111));
+  }
+
+  /* Gradient icon style */
+  .vts-icon--gradient {
+    background: linear-gradient(135deg, var(--item-icon-bg, #667eea), color-mix(in srgb, var(--item-icon-bg, #667eea) 60%, #fff));
+    color: #ffffff;
+  }
+
+  /* Outline icon style */
+  .vts-icon--outline {
+    background: transparent;
+    border: 2px solid var(--item-icon-bg, var(--vts-icon-bg, #111));
+    color: var(--item-icon-bg, var(--vts-icon-bg, #111));
+  }
+
+  .vts-item:hover .vts-icon-wrap {
+    transform: scale(1.12) translateY(-3px);
+  }
+
+  .vts-icon-svg {
+    width: 46%;
+    height: 46%;
+    flex-shrink: 0;
+  }
+
+  /* ── Text block ── */
+  .vts-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+  }
+
+  .vts-title {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--vts-text-color, #111);
+    margin: 0;
+    letter-spacing: 0.01em;
+    text-transform: uppercase;
+    line-height: 1.2;
+  }
+
+  .vts-desc {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: 0.82rem;
+    color: var(--vts-sub-color, #777);
+    margin: 0;
+    line-height: 1.5;
+  }
+
+  /* ─────────────────────────────────
+     TABLET (2-col grid)
+  ───────────────────────────────── */
+  @media (max-width: 989px) {
+    .vts-strip {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .vts-style-card .vts-strip,
+    .vts-style-glass .vts-strip {
+      gap: 0.75rem;
+    }
+
+    .vts-divider { display: none; }
+
+    /* Re-add bottom borders on strip style */
+    .vts-style-strip .vts-item {
+      border-bottom: 1px solid var(--vts-divider, rgba(0,0,0,0.07));
+    }
+
+    .vts-style-strip .vts-item:nth-last-child(-n+2) {
+      border-bottom: none;
+    }
+  }
+
+  /* ─────────────────────────────────
+     MOBILE (single column)
+  ───────────────────────────────── */
+  @media (max-width: 479px) {
+    .vts-strip {
+      grid-template-columns: 1fr;
+    }
+
+    .vts-item {
+      flex-direction: row;
+      text-align: left;
+      padding: 1.25rem 1rem;
+      gap: 1rem;
+    }
+
+    .vts-icon-wrap {
+      flex-shrink: 0;
+    }
+
+    .vts-style-strip .vts-item {
+      border-bottom: 1px solid var(--vts-divider, rgba(0,0,0,0.07));
+    }
+
+    .vts-style-strip .vts-item:last-child {
+      border-bottom: none;
+    }
+
+    .vts-style-card .vts-strip,
+    .vts-style-glass .vts-strip {
+      gap: 0.6rem;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Trust Strip",
+  "class": "section-vape-trust-strip",
+  "tag": "section",
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Optional Section Heading"
+    },
+    {
+      "type": "text",
+      "id": "section_title",
+      "label": "Section title",
+      "info": "Leave blank to hide the heading."
+    },
+    {
+      "type": "text",
+      "id": "section_subtitle",
+      "label": "Section subtitle"
+    },
+    {
+      "type": "header",
+      "content": "Card / Strip Style"
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "Display style",
+      "options": [
+        { "value": "strip",  "label": "Strip (borderless, dividers)" },
+        { "value": "card",   "label": "Cards (bordered shadow)"      },
+        { "value": "glass",  "label": "Glass (for dark backgrounds)"  }
+      ],
+      "default": "strip"
+    },
+    {
+      "type": "color",
+      "id": "card_bg",
+      "label": "Card background colour",
+      "default": "#f7f7f7",
+      "info": "Used in 'Cards' style only."
+    },
+    {
+      "type": "range",
+      "id": "card_radius",
+      "label": "Card corner radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Default Icon Colours"
+    },
+    {
+      "type": "color",
+      "id": "icon_bg_color",
+      "label": "Icon background (default)",
+      "default": "#f0f0f0",
+      "info": "Can be overridden per block."
+    },
+    {
+      "type": "color",
+      "id": "icon_color",
+      "label": "Icon stroke colour (default)",
+      "default": "#111111",
+      "info": "Can be overridden per block."
+    },
+    {
+      "type": "header",
+      "content": "Text Colours"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Heading text colour",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "subtext_color",
+      "label": "Description text colour",
+      "default": "#777777"
+    },
+    {
+      "type": "color",
+      "id": "divider_color",
+      "label": "Divider line colour",
+      "default": "#e5e5e5"
+    },
+    {
+      "type": "header",
+      "content": "Icon Size"
+    },
+    {
+      "type": "range",
+      "id": "icon_size",
+      "label": "Icon bubble size",
+      "min": 44,
+      "max": 96,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "header",
+      "content": "Section Background & Spacing"
+    },
+    {
+      "type": "color",
+      "id": "section_bg",
+      "label": "Section background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "blocks": [
+    {
+      "type": "trust_item",
+      "name": "Trust Item",
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "delivery", "label": "🚚 Fast Delivery"        },
+            { "value": "shield",   "label": "🛡️ Secure / Shield"      },
+            { "value": "support",  "label": "🎧 24/7 Support"         },
+            { "value": "returns",  "label": "🔄 Easy Returns"         },
+            { "value": "star",     "label": "⭐ Star / Quality"       },
+            { "value": "lock",     "label": "🔒 Lock / Privacy"       },
+            { "value": "gift",     "label": "🎁 Gift / Free Gift"     },
+            { "value": "leaf",     "label": "🌿 Eco / Natural"        },
+            { "value": "award",    "label": "🏆 Award / Certified"    },
+            { "value": "zap",      "label": "⚡ Fast / Instant"       }
+          ],
+          "default": "delivery"
+        },
+        {
+          "type": "select",
+          "id": "icon_style",
+          "label": "Icon background style",
+          "options": [
+            { "value": "solid",    "label": "Solid fill"    },
+            { "value": "gradient", "label": "Gradient fill" },
+            { "value": "outline",  "label": "Outline ring"  }
+          ],
+          "default": "solid"
+        },
+        {
+          "type": "color",
+          "id": "icon_accent_color",
+          "label": "Icon accent colour",
+          "info": "Leave blank to use the section default."
+        },
+        {
+          "type": "color",
+          "id": "icon_svg_color",
+          "label": "Icon stroke / fill colour",
+          "info": "Leave blank to use the section default."
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "Fast Delivery"
+        },
+        {
+          "type": "text",
+          "id": "description",
+          "label": "Description",
+          "default": "Free shipping on orders over £30"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link URL",
+          "info": "Optional. Makes the entire item clickable."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Trust Strip",
+      "category": "Store Features",
+      "settings": {
+        "card_style": "strip",
+        "section_bg": "#ffffff",
+        "icon_bg_color": "#f0f4ff",
+        "icon_color": "#1a1a2e",
+        "padding_top": 48,
+        "padding_bottom": 48
+      },
+      "blocks": [
+        {
+          "type": "trust_item",
+          "settings": {
+            "icon": "delivery",
+            "icon_style": "solid",
+            "icon_accent_color": "#e8f5e9",
+            "icon_svg_color": "#2e7d32",
+            "title": "Free Delivery",
+            "description": "Free UK shipping on orders over £30"
+          }
+        },
+        {
+          "type": "trust_item",
+          "settings": {
+            "icon": "shield",
+            "icon_style": "solid",
+            "icon_accent_color": "#e3f2fd",
+            "icon_svg_color": "#1565c0",
+            "title": "Secure Checkout",
+            "description": "256-bit SSL encrypted payments"
+          }
+        },
+        {
+          "type": "trust_item",
+          "settings": {
+            "icon": "support",
+            "icon_style": "solid",
+            "icon_accent_color": "#fce4ec",
+            "icon_svg_color": "#c62828",
+            "title": "Expert Support",
+            "description": "Vape experts available 7 days a week"
+          }
+        },
+        {
+          "type": "trust_item",
+          "settings": {
+            "icon": "returns",
+            "icon_style": "solid",
+            "icon_accent_color": "#fff3e0",
+            "icon_svg_color": "#e65100",
+            "title": "Easy Returns",
+            "description": "Hassle-free 30-day returns policy"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

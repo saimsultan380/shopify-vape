@@ -1,0 +1,123 @@
+{%- comment -%}
+  ============================================================
+  Vape Product Card Snippet — snippets/vape-product-card.liquid
+  Matching Screenshots 1 & 2 design:
+  • Red discount percentage badge
+  • Secondary image hover swap
+  • 5-star ratings, Vendor line ("BY VENDOR")
+  • Bold price & compare price
+  • Floating quick add & quick view side buttons
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+  assign has_discount = false
+  if product.compare_at_price > product.price
+    assign has_discount = true
+    assign discount_percent = product.compare_at_price | minus: product.price | times: 100.0 | divided_by: product.compare_at_price | round
+  endif
+
+  assign primary_image = product.featured_media.preview_image | default: product.featured_image
+  assign secondary_image = product.media[1].preview_image | default: product.images[1]
+
+  assign card_rating = product.metafields.reviews.rating.value.rating | default: product.metafields.reviews.rating.value | default: 5
+  assign card_rating_floor = card_rating | floor
+-%}
+
+<div class="vfp-card-item" data-product-id="{{ product.id }}">
+  <div class="vfp-card">
+    
+    {%- comment -%} Discount Badge {%- endcomment -%}
+    {%- if has_discount -%}
+      <div class="vfp-card-badge">-{{ discount_percent }}%</div>
+    {%- endif -%}
+
+    {%- comment -%} Product Image Container {%- endcomment -%}
+    <a href="{{ product.url }}" class="vfp-card-image-wrap" aria-label="{{ product.title | escape }}">
+      {%- if primary_image != blank -%}
+        {%- liquid
+          assign primary_class = 'vfp-img-primary'
+          if secondary_image != blank
+            assign primary_class = primary_class | append: ' has-secondary'
+          endif
+          assign primary_alt = primary_image.alt | default: product.title
+        -%}
+        {{
+          primary_image
+          | image_url: width: 500
+          | image_tag:
+            loading: 'lazy',
+            class: primary_class,
+            widths: '250, 350, 500',
+            alt: primary_alt
+        }}
+
+        {%- if secondary_image != blank -%}
+          {%- assign secondary_alt = secondary_image.alt | default: product.title -%}
+          {{
+            secondary_image
+            | image_url: width: 500
+            | image_tag:
+              loading: 'lazy',
+              class: 'vfp-img-secondary',
+              widths: '250, 350, 500',
+              alt: secondary_alt
+          }}
+        {%- endif -%}
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'vfp-card-svg' }}
+      {%- endif -%}
+    </a>
+
+    {%- comment -%} Floating Hover Action Buttons (Shopping Bag & Quick View) {%- endcomment -%}
+    <div class="vfp-card-actions">
+      <button 
+        type="button" 
+        class="vfp-action-btn" 
+        title="Add to Cart" 
+        aria-label="Add {{ product.title | escape }} to cart"
+        data-quick-add-btn
+        data-variant-id="{{ current_variant.id }}"
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"></path><line x1="3" y1="6" x2="21" y2="6"></line><path d="M16 10a4 4 0 0 1-8 0"></path></svg>
+      </button>
+
+      <button 
+        type="button" 
+        class="vfp-action-btn" 
+        title="Quick View" 
+        aria-label="Quick view {{ product.title | escape }}"
+        data-qv-trigger
+        data-product-json='{{ product | json | escape }}'
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><rect x="7" y="7" width="3" height="3"></rect><rect x="14" y="7" width="3" height="3"></rect><rect x="14" y="14" width="3" height="3"></rect><rect x="7" y="14" width="3" height="3"></rect></svg>
+      </button>
+    </div>
+
+    {%- comment -%} Card Text & Details {%- endcomment -%}
+    <div class="vfp-card-content">
+      <div class="vfp-rating" aria-label="Rated {{ card_rating }} out of 5">
+        {%- for i in (1..5) -%}
+          <span{% if i <= card_rating_floor %} style="color:#f5a623"{% endif %}>★</span>
+        {%- endfor -%}
+      </div>
+      
+      <div class="vfp-vendor">
+        BY <span class="vfp-vendor-name">{{ product.vendor | default: 'VAPEHUB' | upcase }}</span>
+      </div>
+
+      <h3 class="vfp-product-title">
+        <a href="{{ product.url }}">{{ product.title | escape }}</a>
+      </h3>
+
+      <div class="vfp-price-row">
+        <span class="vfp-price-sale">{{ product.price | money }}</span>
+        {%- if has_discount -%}
+          <span class="vfp-price-compare">{{ product.compare_at_price | money }}</span>
+        {%- endif -%}
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,116 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "vape-product-page",
+      "blocks": {
+        "feature_1": {
+          "type": "feature",
+          "settings": {
+            "icon_text": "TR",
+            "title": "Free delivery",
+            "text": "For all orders over $99, always free delivery."
+          }
+        },
+        "feature_2": {
+          "type": "feature",
+          "settings": {
+            "icon_text": "90",
+            "title": "90 Days return",
+            "text": "If goods have problems, 90 days returns."
+          }
+        },
+        "feature_3": {
+          "type": "feature",
+          "settings": {
+            "icon_text": "CC",
+            "title": "Secure Payment",
+            "text": "100% secure payment, support multi cards."
+          }
+        },
+        "review_1": {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "title": "Perfect coils",
+            "body": "Flavour is incredible and they last much longer than others I've tried.",
+            "author": "Jordan K.",
+            "date": "July 2026"
+          }
+        },
+        "review_2": {
+          "type": "review",
+          "settings": {
+            "rating": 4,
+            "title": "Solid quality",
+            "body": "Great build and packaging. Shipping was quick too.",
+            "author": "Sam R.",
+            "date": "June 2026"
+          }
+        }
+      },
+      "block_order": [
+        "feature_1",
+        "feature_2",
+        "feature_3",
+        "review_1",
+        "review_2"
+      ],
+      "settings": {
+        "inventory_threshold": 20,
+        "force_inventory_bar": false,
+        "show_flash_sale": true,
+        "flash_sale_label": "FLASH SALE",
+        "flash_sale_end": "2026-12-31 23:59",
+        "fallback_rating": "4.8",
+        "fallback_review_count": 10,
+        "reviews_heading": "Customer Reviews",
+        "dist_5": 72,
+        "dist_4": 18,
+        "dist_3": 6,
+        "dist_2": 2,
+        "dist_1": 2,
+        "custom_tab_label": "Contact Us",
+        "custom_tab_content": "<p>Have a question about this product? Reach out and our team will help you find the right setup.</p>",
+        "wishlist_url": "/pages/wishlist",
+        "show_payment_icons": true,
+        "payment_label": "Guaranteed Safe Checkout",
+        "section_bg": "#ffffff",
+        "accent_color": "#e53935",
+        "sale_color": "#e53935",
+        "badge_color": "#ffb74d",
+        "button_bg": "#111111",
+        "button_text": "#ffffff",
+        "padding_top": 32,
+        "padding_bottom": 48
+      }
+    },
+    "recently_viewed": {
+      "type": "vape-recently-viewed",
+      "settings": {
+        "heading": "Recently Viewed",
+        "heading_color": "#111111",
+        "products_to_show": 8,
+        "columns_desktop": 4,
+        "columns_tablet": 2,
+        "columns_mobile": 2,
+        "card_gap": 20,
+        "section_bg_color": "#ffffff",
+        "padding_top": 48,
+        "padding_bottom": 64
+      }
+    }
+  },
+  "order": [
+    "main",
+    "recently_viewed"
+  ]
+}

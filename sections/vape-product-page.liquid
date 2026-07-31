@@ -1,0 +1,1831 @@
+{%- comment -%}
+  ============================================================
+  Vape Pro Single Product Page — sections/vape-product-page.liquid
+
+  Matches the reference design:
+  • Vertical thumbnail gallery + main image
+  • Title, stars, sale price, inventory bar, flash sale
+  • Dynamic variants, specs, qty, ATC, wishlist
+  • Tabs: Description / Specs / Reviews / Custom
+  • Feature highlights + full ratings section
+  • Fully responsive
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign current_variant = product.selected_or_first_available_variant
+  assign product_form_id = 'vpp-product-form-' | append: section.id
+
+  assign has_discount = false
+  assign discount_percent = 0
+  if current_variant.compare_at_price > current_variant.price
+    assign has_discount = true
+    assign discount_percent = current_variant.compare_at_price | minus: current_variant.price | times: 100.0 | divided_by: current_variant.compare_at_price | round
+  endif
+
+  assign rating_value = product.metafields.reviews.rating.value.rating | default: product.metafields.reviews.rating.value
+  assign rating_max = product.metafields.reviews.rating.value.scale_max | default: 5
+  assign rating_count = product.metafields.reviews.rating_count | default: 0
+  if rating_value == blank
+    assign rating_value = section.settings.fallback_rating
+    assign rating_count = section.settings.fallback_review_count
+  endif
+  assign rating_floor = rating_value | floor
+  assign rating_decimal = rating_value | modulo: 1
+  assign rating_half_at = rating_floor | plus: 1
+
+  assign inventory_qty = current_variant.inventory_quantity | default: 0
+  assign inventory_threshold = section.settings.inventory_threshold | default: 20
+  assign show_inventory_bar = false
+  if current_variant.inventory_management != blank and inventory_qty > 0 and inventory_qty <= inventory_threshold
+    assign show_inventory_bar = true
+  endif
+  if section.settings.force_inventory_bar and inventory_qty > 0
+    assign show_inventory_bar = true
+  endif
+  assign inventory_percent = inventory_qty | times: 100.0 | divided_by: inventory_threshold
+  if inventory_percent > 100
+    assign inventory_percent = 100
+  endif
+
+  assign flash_end = section.settings.flash_sale_end
+  assign show_flash = section.settings.show_flash_sale
+-%}
+
+<script type="application/ld+json">
+  {{ product | structured_data }}
+</script>
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --vpp-accent: {{ section.settings.accent_color }};
+    --vpp-sale: {{ section.settings.sale_color }};
+    --vpp-badge: {{ section.settings.badge_color }};
+    --vpp-btn: {{ section.settings.button_bg }};
+    --vpp-btn-text: {{ section.settings.button_text }};
+    padding-block-start: {{ section.settings.padding_top }}px;
+    padding-block-end: {{ section.settings.padding_bottom }}px;
+    background: {{ section.settings.section_bg }};
+  }
+{% endstyle %}
+
+<div
+  id="vpp-{{ section.id }}"
+  class="vpp"
+  data-section-id="{{ section.id }}"
+  data-product-id="{{ product.id }}"
+  data-variant-id="{{ current_variant.id }}"
+>
+  {%- comment -%} ── Breadcrumb ── {%- endcomment -%}
+  <nav class="vpp-breadcrumb" aria-label="Breadcrumb">
+    <a href="{{ routes.root_url }}">Home</a>
+    <span class="vpp-breadcrumb__sep">/</span>
+    {%- if collection -%}
+      <a href="{{ collection.url }}">{{ collection.title | escape }}</a>
+      <span class="vpp-breadcrumb__sep">/</span>
+    {%- elsif product.collections.first -%}
+      <a href="{{ product.collections.first.url }}">{{ product.collections.first.title | escape }}</a>
+      <span class="vpp-breadcrumb__sep">/</span>
+    {%- endif -%}
+    <span class="vpp-breadcrumb__current">{{ product.title | escape }}</span>
+  </nav>
+
+  {%- comment -%} ── Main grid: Gallery + Info ── {%- endcomment -%}
+  <div class="vpp-main">
+    {%- comment -%} LEFT: Media gallery {%- endcomment -%}
+    <div class="vpp-gallery" data-vpp-gallery>
+      {%- if product.media.size > 1 -%}
+        <div class="vpp-thumbs" data-vpp-thumbs role="listbox" aria-label="Product images">
+          {%- for media in product.media -%}
+            <button
+              type="button"
+              class="vpp-thumb{% if forloop.first %} is-active{% endif %}"
+              data-vpp-thumb
+              data-index="{{ forloop.index0 }}"
+              aria-label="View image {{ forloop.index }}"
+              aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+            >
+              {{
+                media.preview_image
+                | image_url: width: 160
+                | image_tag:
+                  loading: 'lazy',
+                  widths: '80, 120, 160',
+                  sizes: '72px',
+                  alt: media.alt | default: product.title | escape
+              }}
+            </button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      <div class="vpp-main-media">
+        {%- if product.featured_media -%}
+          {%- for media in product.media -%}
+            <div
+              class="vpp-main-slide{% if forloop.first %} is-active{% endif %}"
+              data-vpp-slide
+              data-index="{{ forloop.index0 }}"
+              {% unless forloop.first %}hidden{% endunless %}
+            >
+              {%- case media.media_type -%}
+                {%- when 'image' -%}
+                  {%- liquid
+                    if forloop.first
+                      assign img_loading = 'eager'
+                    else
+                      assign img_loading = 'lazy'
+                    endif
+                    assign img_alt = media.alt | default: product.title
+                  -%}
+                  {{
+                    media
+                    | image_url: width: 1400
+                    | image_tag:
+                      loading: img_loading,
+                      widths: '400, 600, 800, 1000, 1200, 1400',
+                      sizes: '(max-width: 749px) 100vw, 50vw',
+                      alt: img_alt,
+                      class: 'vpp-main-img'
+                  }}
+                {%- when 'video', 'external_video' -%}
+                  {{ media | media_tag: image_size: '1100x', autoplay: false, loop: false, controls: true, class: 'vpp-main-video' }}
+                {%- when 'model' -%}
+                  {{ media | media_tag }}
+                {%- else -%}
+                  {{
+                    media.preview_image
+                    | image_url: width: 1400
+                    | image_tag: loading: 'lazy', class: 'vpp-main-img', alt: product.title | escape
+                  }}
+              {%- endcase -%}
+            </div>
+          {%- endfor -%}
+        {%- else -%}
+          {{ 'product-1' | placeholder_svg_tag: 'vpp-placeholder' }}
+        {%- endif -%}
+
+        {%- if product.media.size > 1 -%}
+          <button type="button" class="vpp-gallery-nav vpp-gallery-nav--prev" data-vpp-prev aria-label="Previous image">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <button type="button" class="vpp-gallery-nav vpp-gallery-nav--next" data-vpp-next aria-label="Next image">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        {%- endif -%}
+      </div>
+    </div>
+
+    {%- comment -%} RIGHT: Product info {%- endcomment -%}
+    <div class="vpp-info">
+      <h1 class="vpp-title">{{ product.title | escape }}</h1>
+
+      <div class="vpp-rating-row">
+        <div class="vpp-stars" aria-label="Rated {{ rating_value }} out of {{ rating_max }}">
+          {%- for i in (1..rating_max) -%}
+            {%- if i <= rating_floor -%}
+              <span class="vpp-star is-filled">★</span>
+            {%- elsif i == rating_half_at and rating_decimal >= 0.3 -%}
+              <span class="vpp-star is-half">★</span>
+            {%- else -%}
+              <span class="vpp-star">★</span>
+            {%- endif -%}
+          {%- endfor -%}
+        </div>
+        <a href="#vpp-reviews-{{ section.id }}" class="vpp-review-link">
+          ({{ rating_count }}) write a review
+        </a>
+      </div>
+
+      <div class="vpp-price-row" data-vpp-price>
+        <span class="vpp-price" data-vpp-price-sale>{{ current_variant.price | money }}</span>
+        <span
+          class="vpp-compare{% unless has_discount %} is-hidden{% endunless %}"
+          data-vpp-price-compare
+        >
+          {{- current_variant.compare_at_price | money -}}
+        </span>
+        <span
+          class="vpp-discount-badge{% unless has_discount %} is-hidden{% endunless %}"
+          data-vpp-discount
+        >
+          -{{ discount_percent }}%
+        </span>
+      </div>
+
+      {%- if product.description != blank -%}
+        <div class="vpp-excerpt">
+          {{ product.description | strip_html | truncatewords: 45 }}
+        </div>
+      {%- endif -%}
+
+      {%- if show_inventory_bar -%}
+        <div class="vpp-stock" data-vpp-stock>
+          <p class="vpp-stock__text">
+            Hurry! Only <strong data-vpp-stock-qty>{{ inventory_qty }}</strong> left in stock
+          </p>
+          <div class="vpp-stock__bar" role="progressbar" aria-valuenow="{{ inventory_qty }}" aria-valuemin="0" aria-valuemax="{{ inventory_threshold }}">
+            <span class="vpp-stock__fill" style="width: {{ inventory_percent }}%;" data-vpp-stock-fill></span>
+          </div>
+        </div>
+      {%- endif -%}
+
+      {%- if show_flash -%}
+        {%- liquid
+          assign flash_end_iso = blank
+          if flash_end != blank
+            assign flash_end_iso = flash_end | date: '%Y-%m-%dT%H:%M:%S'
+          endif
+        -%}
+        <div class="vpp-flash" data-vpp-flash{% if flash_end_iso != blank %} data-end="{{ flash_end_iso }}"{% endif %}>
+          <div class="vpp-flash__left">
+            <span class="vpp-flash__label">{{ section.settings.flash_sale_label | escape }}</span>
+            <div class="vpp-flash__timer" data-vpp-timer aria-live="polite">
+              <span data-vpp-h>00</span>h :
+              <span data-vpp-m>00</span>m :
+              <span data-vpp-s>00</span>s
+            </div>
+          </div>
+        </div>
+      {%- endif -%}
+
+      {%- form 'product', product, id: product_form_id, class: 'vpp-form', data-type: 'add-to-cart-form' -%}
+        <input type="hidden" name="id" value="{{ current_variant.id }}" data-vpp-variant-input>
+
+        {%- unless product.has_only_default_variant -%}
+          <div class="vpp-variants" data-vpp-variants>
+            {%- for option in product.options_with_values -%}
+              <fieldset class="vpp-option" data-option-index="{{ forloop.index0 }}">
+                <legend class="vpp-option__label">{{ option.name | escape }}</legend>
+                <div class="vpp-option__values">
+                  {%- for value in option.values -%}
+                    {%- assign option_disabled = true -%}
+                    {%- if value.available -%}
+                      {%- assign option_disabled = false -%}
+                    {%- endif -%}
+                    <label class="vpp-swatch{% if option.selected_value == value %} is-selected{% endif %}{% if option_disabled %} is-disabled{% endif %}">
+                      <input
+                        type="radio"
+                        name="options[{{ option.name | escape }}]"
+                        value="{{ value | escape }}"
+                        {% if option.selected_value == value %}checked{% endif %}
+                        {% if option_disabled %}disabled{% endif %}
+                        data-vpp-option
+                        data-option-position="{{ option.position }}"
+                      >
+                      <span>{{ value | escape }}</span>
+                    </label>
+                  {%- endfor -%}
+                </div>
+              </fieldset>
+            {%- endfor -%}
+          </div>
+        {%- endunless -%}
+
+        <ul class="vpp-specs" role="list">
+          {%- if product.vendor != blank -%}
+            <li><span>Brand</span><strong>{{ product.vendor | escape }}</strong></li>
+          {%- endif -%}
+          {%- if product.type != blank -%}
+            <li><span>Type</span><strong>{{ product.type | escape }}</strong></li>
+          {%- endif -%}
+          <li>
+            <span>SKU</span>
+            <strong data-vpp-sku>{{ current_variant.sku | default: 'N/A' | escape }}</strong>
+          </li>
+          <li>
+            <span>Availability</span>
+            <strong class="vpp-availability{% if current_variant.available %} is-in{% else %} is-out{% endif %}" data-vpp-availability>
+              {%- if current_variant.available -%}
+                In stock, ready to ship
+              {%- else -%}
+                Out of stock
+              {%- endif -%}
+            </strong>
+          </li>
+          {%- if product.metafields.custom.specifications != blank -%}
+            <li><span>Specs</span><strong>{{ product.metafields.custom.specifications.value | default: product.metafields.custom.specifications | escape }}</strong></li>
+          {%- endif -%}
+        </ul>
+
+        <div class="vpp-actions">
+          <div class="vpp-qty" data-vpp-qty>
+            <button type="button" class="vpp-qty__btn" data-vpp-qty-minus aria-label="Decrease quantity">−</button>
+            <input
+              type="number"
+              name="quantity"
+              value="1"
+              min="1"
+              class="vpp-qty__input"
+              data-vpp-qty-input
+              aria-label="Quantity"
+            >
+            <button type="button" class="vpp-qty__btn" data-vpp-qty-plus aria-label="Increase quantity">+</button>
+          </div>
+
+          <button
+            type="submit"
+            name="add"
+            class="vpp-atc"
+            data-vpp-atc
+            {% unless current_variant.available %}disabled{% endunless %}
+          >
+            <span data-vpp-atc-text>
+              {%- if current_variant.available -%}
+                ADD TO CART
+              {%- else -%}
+                SOLD OUT
+              {%- endif -%}
+            </span>
+          </button>
+
+          <a
+            href="{{ section.settings.wishlist_url | default: '/pages/wishlist' }}"
+            class="vpp-wishlist"
+            aria-label="Add to wishlist"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+            </svg>
+          </a>
+        </div>
+      {%- endform -%}
+
+      <div class="vpp-utils">
+        <button type="button" class="vpp-util" data-vpp-share data-url="{{ shop.url }}{{ product.url }}" data-title="{{ product.title | escape }}">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
+          Share
+        </button>
+        <a href="#vpp-tabs-{{ section.id }}" class="vpp-util" data-vpp-ask>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+          Ask a question
+        </a>
+      </div>
+
+      {%- if section.settings.show_payment_icons -%}
+        <div class="vpp-payments">
+          <p class="vpp-payments__label">{{ section.settings.payment_label | escape }}</p>
+          <ul class="vpp-payments__list" role="list">
+            {%- for type in shop.enabled_payment_types -%}
+              <li>{{ type | payment_type_svg_tag: class: 'icon icon--full-color' }}</li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+    </div>
+  </div>
+
+  {%- comment -%} ── Tabs ── {%- endcomment -%}
+  <div class="vpp-tabs" id="vpp-tabs-{{ section.id }}" data-vpp-tabs>
+    <div class="vpp-tabs__nav" role="tablist">
+      <button type="button" class="vpp-tab is-active" role="tab" aria-selected="true" data-tab="description">Description</button>
+      <button type="button" class="vpp-tab" role="tab" aria-selected="false" data-tab="specifications">Specifications</button>
+      <button type="button" class="vpp-tab" role="tab" aria-selected="false" data-tab="reviews">Reviews and Ratings</button>
+      <button type="button" class="vpp-tab" role="tab" aria-selected="false" data-tab="custom">{{ section.settings.custom_tab_label | default: 'Contact Us' | escape }}</button>
+    </div>
+
+    <div class="vpp-tabs__panels">
+      <div class="vpp-panel is-active" data-panel="description" role="tabpanel">
+        <div class="vpp-rte">
+          {%- if product.description != blank -%}
+            {{ product.description }}
+          {%- else -%}
+            <p>No description available for this product.</p>
+          {%- endif -%}
+        </div>
+      </div>
+
+      <div class="vpp-panel" data-panel="specifications" role="tabpanel" hidden>
+        <div class="vpp-rte">
+          {%- if product.metafields.custom.specifications != blank -%}
+            {{ product.metafields.custom.specifications | metafield_tag }}
+          {%- else -%}
+            <ul class="vpp-spec-list">
+              {%- if product.vendor != blank -%}<li><strong>Brand:</strong> {{ product.vendor | escape }}</li>{%- endif -%}
+              {%- if product.type != blank -%}<li><strong>Type:</strong> {{ product.type | escape }}</li>{%- endif -%}
+              {%- if current_variant.sku != blank -%}<li><strong>SKU:</strong> {{ current_variant.sku | escape }}</li>{%- endif -%}
+              {%- if product.tags.size > 0 -%}
+                <li><strong>Tags:</strong> {{ product.tags | join: ', ' | escape }}</li>
+              {%- endif -%}
+              {%- for option in product.options_with_values -%}
+                <li><strong>{{ option.name | escape }}:</strong> {{ option.values | join: ', ' | escape }}</li>
+              {%- endfor -%}
+              <li><strong>Weight:</strong> {{ current_variant.weight | weight_with_unit: current_variant.weight_unit }}</li>
+            </ul>
+          {%- endif -%}
+        </div>
+      </div>
+
+      <div class="vpp-panel" data-panel="reviews" role="tabpanel" hidden>
+        <div id="shopify-product-reviews" data-id="{{ product.id }}">{{ product.metafields.spr.reviews }}</div>
+        <p class="vpp-reviews-fallback">
+          <a href="#vpp-reviews-{{ section.id }}">See full ratings & reviews below</a>
+        </p>
+      </div>
+
+      <div class="vpp-panel" data-panel="custom" role="tabpanel" hidden>
+        <div class="vpp-rte">
+          {%- if section.settings.custom_tab_content != blank -%}
+            {{ section.settings.custom_tab_content }}
+          {%- else -%}
+            <p>Have a question about this product? Contact us at <a href="mailto:{{ shop.email }}">{{ shop.email }}</a>.</p>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {%- comment -%} ── Feature highlights ── {%- endcomment -%}
+  {%- if section.blocks.size > 0 -%}
+    <div class="vpp-features">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'feature' -%}
+          <div class="vpp-feature" {{ block.shopify_attributes }}>
+            <div class="vpp-feature__icon" aria-hidden="true">{{ block.settings.icon_text | escape }}</div>
+            <div class="vpp-feature__body">
+              <h3 class="vpp-feature__title">{{ block.settings.title | escape }}</h3>
+              <p class="vpp-feature__text">{{ block.settings.text | escape }}</p>
+            </div>
+          </div>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Full Ratings Section ── {%- endcomment -%}
+  <div class="vpp-reviews" id="vpp-reviews-{{ section.id }}">
+    <div class="vpp-reviews__header">
+      <h2 class="vpp-reviews__heading">{{ section.settings.reviews_heading | escape }}</h2>
+      <p class="vpp-reviews__sub">Based on {{ rating_count }} customer review{% if rating_count != 1 %}s{% endif %}</p>
+    </div>
+
+    <div class="vpp-reviews__grid">
+      <div class="vpp-reviews__summary">
+        <div class="vpp-reviews__score">{{ rating_value | round: 1 }}</div>
+        <div class="vpp-stars vpp-stars--lg" aria-hidden="true">
+          {%- for i in (1..5) -%}
+            <span class="vpp-star{% if i <= rating_floor %} is-filled{% endif %}">★</span>
+          {%- endfor -%}
+        </div>
+        <p class="vpp-reviews__count">{{ rating_count }} reviews</p>
+      </div>
+
+      <div class="vpp-reviews__bars">
+        {%- assign dist_5 = section.settings.dist_5 -%}
+        {%- assign dist_4 = section.settings.dist_4 -%}
+        {%- assign dist_3 = section.settings.dist_3 -%}
+        {%- assign dist_2 = section.settings.dist_2 -%}
+        {%- assign dist_1 = section.settings.dist_1 -%}
+        {%- for star_n in (5..1) -%}
+          {%- liquid
+            case star_n
+              when 5
+                assign bar_pct = dist_5
+              when 4
+                assign bar_pct = dist_4
+              when 3
+                assign bar_pct = dist_3
+              when 2
+                assign bar_pct = dist_2
+              else
+                assign bar_pct = dist_1
+            endcase
+          -%}
+          <div class="vpp-bar-row">
+            <span class="vpp-bar-label">{{ star_n }} star</span>
+            <div class="vpp-bar-track"><span class="vpp-bar-fill" style="width: {{ bar_pct }}%;"></span></div>
+            <span class="vpp-bar-pct">{{ bar_pct }}%</span>
+          </div>
+        {%- endfor -%}
+      </div>
+    </div>
+
+    {%- assign review_blocks = section.blocks | where: 'type', 'review' -%}
+    {%- if review_blocks.size > 0 -%}
+      <div class="vpp-review-list">
+        {%- for block in review_blocks -%}
+          <article class="vpp-review-card" {{ block.shopify_attributes }}>
+            <div class="vpp-review-card__top">
+              <div class="vpp-stars" aria-label="{{ block.settings.rating }} out of 5">
+                {%- assign r = block.settings.rating | default: 5 -%}
+                {%- for i in (1..5) -%}
+                  <span class="vpp-star{% if i <= r %} is-filled{% endif %}">★</span>
+                {%- endfor -%}
+              </div>
+              {%- if block.settings.date != blank -%}
+                <time class="vpp-review-card__date">{{ block.settings.date | escape }}</time>
+              {%- endif -%}
+            </div>
+            {%- if block.settings.title != blank -%}
+              <h3 class="vpp-review-card__title">{{ block.settings.title | escape }}</h3>
+            {%- endif -%}
+            <p class="vpp-review-card__body">{{ block.settings.body | escape }}</p>
+            <p class="vpp-review-card__author">— {{ block.settings.author | escape }}</p>
+          </article>
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+  </div>
+</div>
+
+{%- comment -%} Variant JSON for JS picker {%- endcomment -%}
+<script type="application/json" data-vpp-variants-json>
+  {{ product.variants | json }}
+</script>
+
+<style>
+  /* ============================================================
+     VAPE PRO PRODUCT PAGE (vpp)
+  ============================================================ */
+  .vpp {
+    width: 100%;
+    max-width: var(--page-width, 1400px);
+    margin-inline: auto;
+    padding-inline: var(--vape-page-padding, clamp(1rem, 4vw, 3.5rem));
+    font-family: var(--vape-font-primary, 'Inter', system-ui, sans-serif);
+    color: #222;
+  }
+
+  .vpp-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.8125rem;
+    color: #888;
+    margin-bottom: 1.75rem;
+  }
+  .vpp-breadcrumb a { color: #666; text-decoration: none; }
+  .vpp-breadcrumb a:hover { color: var(--vpp-accent, #e53935); }
+  .vpp-breadcrumb__current { color: #222; }
+  .vpp-breadcrumb__sep { opacity: 0.45; }
+
+  /* ── Main two-column layout ── */
+  .vpp-main {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    align-items: start;
+  }
+  @media (min-width: 990px) {
+    .vpp-main {
+      grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+      gap: 3.5rem;
+    }
+  }
+
+  /* ── Gallery ── */
+  .vpp-gallery {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+    position: relative;
+  }
+  @media (min-width: 750px) {
+    .vpp-gallery {
+      grid-template-columns: 72px 1fr;
+      gap: 1rem;
+    }
+  }
+
+  .vpp-thumbs {
+    display: flex;
+    gap: 0.6rem;
+    overflow-x: auto;
+    order: 2;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .vpp-thumbs::-webkit-scrollbar { display: none; }
+  @media (min-width: 750px) {
+    .vpp-thumbs {
+      flex-direction: column;
+      overflow-x: visible;
+      overflow-y: auto;
+      max-height: 520px;
+      order: 0;
+    }
+  }
+
+  .vpp-thumb {
+    flex: 0 0 68px;
+    width: 68px;
+    height: 68px;
+    padding: 0;
+    border: 1px solid #e8e8e8;
+    background: #fafafa;
+    cursor: pointer;
+    overflow: hidden;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .vpp-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .vpp-thumb.is-active {
+    border-color: var(--vpp-accent, #e53935);
+    box-shadow: inset 0 -3px 0 var(--vpp-accent, #e53935);
+  }
+
+  .vpp-main-media {
+    position: relative;
+    background: #f7f7f7;
+    min-height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+  @media (min-width: 750px) {
+    .vpp-main-media { min-height: 480px; }
+  }
+
+  .vpp-main-slide {
+    width: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+  }
+  .vpp-main-slide.is-active { display: flex; }
+
+  .vpp-main-img,
+  .vpp-main-video,
+  .vpp-placeholder {
+    width: 100%;
+    max-height: 520px;
+    object-fit: contain;
+  }
+
+  .vpp-gallery-nav {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border: none;
+    background: #fff;
+    color: #111;
+    border-radius: 50%;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 2;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+  }
+  .vpp-main-media:hover .vpp-gallery-nav,
+  .vpp-gallery-nav:focus-visible { opacity: 1; }
+  .vpp-gallery-nav--prev { left: 0.75rem; }
+  .vpp-gallery-nav--next { right: 0.75rem; }
+  @media (max-width: 749px) {
+    .vpp-gallery-nav { opacity: 1; }
+  }
+
+  /* ── Info column ── */
+  .vpp-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  @media (min-width: 990px) {
+    .vpp-info {
+      position: sticky;
+      top: 6rem;
+    }
+  }
+
+  .vpp-title {
+    font-size: clamp(1.5rem, 2.5vw, 2rem);
+    font-weight: 800;
+    line-height: 1.2;
+    color: #111;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+
+  .vpp-rating-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+  }
+  .vpp-stars { display: inline-flex; gap: 1px; color: #ddd; font-size: 0.95rem; letter-spacing: 1px; }
+  .vpp-star.is-filled,
+  .vpp-star.is-half { color: #f5a623; }
+  .vpp-stars--lg { font-size: 1.25rem; }
+  .vpp-review-link {
+    font-size: 0.875rem;
+    color: #666;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .vpp-review-link:hover { color: var(--vpp-accent, #e53935); }
+
+  .vpp-price-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+  }
+  .vpp-price {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--vpp-sale, #e53935);
+  }
+  .vpp-compare {
+    font-size: 1rem;
+    color: #999;
+    text-decoration: line-through;
+  }
+  .vpp-discount-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--vpp-badge, #ffb74d);
+    color: #111;
+    font-size: 0.75rem;
+    font-weight: 700;
+    padding: 0.2rem 0.55rem;
+    border-radius: 3px;
+  }
+  .is-hidden { display: none !important; }
+
+  .vpp-excerpt {
+    font-size: 0.9375rem;
+    line-height: 1.65;
+    color: #555;
+  }
+
+  /* Stock bar */
+  .vpp-stock { margin-top: 0.25rem; }
+  .vpp-stock__text {
+    font-size: 0.875rem;
+    color: #444;
+    margin: 0 0 0.5rem;
+  }
+  .vpp-stock__text strong { color: var(--vpp-sale, #e53935); }
+  .vpp-stock__bar {
+    height: 6px;
+    background: #eee;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .vpp-stock__fill {
+    display: block;
+    height: 100%;
+    background: linear-gradient(90deg, #ffb74d, #ff9800);
+    border-radius: 99px;
+    transition: width 0.35s ease;
+  }
+
+  /* Flash sale */
+  .vpp-flash {
+    background: #fde8e8;
+    padding: 0.85rem 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+  }
+  .vpp-flash__left {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem;
+  }
+  .vpp-flash__label {
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--vpp-sale, #e53935);
+  }
+  .vpp-flash__timer {
+    font-size: 0.875rem;
+    font-weight: 700;
+    color: #333;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Variants */
+  .vpp-form { display: flex; flex-direction: column; gap: 1.15rem; }
+  .vpp-option { border: 0; margin: 0; padding: 0; }
+  .vpp-option__label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #333;
+    margin-bottom: 0.55rem;
+    padding: 0;
+  }
+  .vpp-option__values {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+  }
+  .vpp-swatch {
+    position: relative;
+    min-width: 42px;
+    height: 42px;
+    padding: 0 0.7rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #3a3a3a;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+  .vpp-swatch input { position: absolute; opacity: 0; pointer-events: none; }
+  .vpp-swatch.is-selected {
+    background: var(--vpp-accent, #e53935);
+    border-color: var(--vpp-accent, #e53935);
+  }
+  .vpp-swatch.is-disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    text-decoration: line-through;
+  }
+  .vpp-swatch:not(.is-disabled):hover {
+    background: #222;
+  }
+
+  /* Specs list */
+  .vpp-specs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.45rem;
+    font-size: 0.875rem;
+  }
+  .vpp-specs li {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 0.5rem;
+  }
+  .vpp-specs span { color: #888; }
+  .vpp-specs strong { color: #222; font-weight: 600; }
+  .vpp-availability.is-in { color: #2e7d32; }
+  .vpp-availability.is-out { color: var(--vpp-sale, #e53935); }
+
+  /* Actions */
+  .vpp-actions {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 0.65rem;
+    align-items: stretch;
+  }
+  @media (max-width: 480px) {
+    .vpp-actions {
+      grid-template-columns: 1fr auto;
+      grid-template-areas:
+        "qty wish"
+        "atc atc";
+    }
+    .vpp-qty { grid-area: qty; }
+    .vpp-wishlist { grid-area: wish; }
+    .vpp-atc { grid-area: atc; }
+  }
+
+  .vpp-qty {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #ddd;
+    height: 52px;
+    background: #fff;
+  }
+  .vpp-qty__btn {
+    width: 40px;
+    height: 100%;
+    border: 0;
+    background: transparent;
+    font-size: 1.25rem;
+    cursor: pointer;
+    color: #333;
+  }
+  .vpp-qty__btn:hover { background: #f5f5f5; }
+  .vpp-qty__input {
+    width: 44px;
+    height: 100%;
+    border: 0 !important;
+    border-left: 1px solid #eee !important;
+    border-right: 1px solid #eee !important;
+    text-align: center;
+    font-weight: 700;
+    background: #fff !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    -moz-appearance: textfield;
+  }
+  .vpp-qty__input::-webkit-outer-spin-button,
+  .vpp-qty__input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  .vpp-atc {
+    height: 52px;
+    border: 0;
+    background: var(--vpp-btn, #111);
+    color: var(--vpp-btn-text, #fff);
+    font-size: 0.875rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .vpp-atc:hover:not(:disabled) {
+    background: var(--vpp-accent, #e53935);
+  }
+  .vpp-atc:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .vpp-atc.is-loading { opacity: 0.7; pointer-events: none; }
+
+  .vpp-wishlist {
+    width: 52px;
+    height: 52px;
+    border: 1px solid #ddd;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    text-decoration: none;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+  }
+  .vpp-wishlist:hover {
+    border-color: var(--vpp-accent, #e53935);
+    color: var(--vpp-accent, #e53935);
+    background: #fff5f5;
+  }
+
+  .vpp-utils {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    padding-top: 0.25rem;
+  }
+  .vpp-util {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: none;
+    border: 0;
+    padding: 0;
+    font-size: 0.8125rem;
+    color: #666;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .vpp-util:hover { color: var(--vpp-accent, #e53935); }
+
+  .vpp-payments {
+    border-top: 1px solid #eee;
+    padding-top: 1.15rem;
+    margin-top: 0.25rem;
+    text-align: center;
+  }
+  .vpp-payments__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #888;
+    margin: 0 0 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .vpp-payments__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  .vpp-payments__list svg { height: 24px; width: auto; }
+
+  /* ── Tabs ── */
+  .vpp-tabs { margin-top: 4rem; }
+  .vpp-tabs__nav {
+    display: flex;
+    gap: 1.75rem;
+    border-bottom: 1px solid #e5e5e5;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .vpp-tabs__nav::-webkit-scrollbar { display: none; }
+
+  .vpp-tab {
+    flex: 0 0 auto;
+    background: none;
+    border: 0;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -1px;
+    padding: 0.85rem 0;
+    font-size: 0.8125rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #999;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.2s ease, border-color 0.2s ease;
+  }
+  .vpp-tab.is-active {
+    color: #111;
+    border-bottom-color: #111;
+  }
+  .vpp-tab:hover { color: #111; }
+
+  .vpp-tabs__panels { padding-top: 1.75rem; }
+  .vpp-panel[hidden] { display: none; }
+  .vpp-rte {
+    font-size: 0.95rem;
+    line-height: 1.75;
+    color: #444;
+    max-width: 820px;
+  }
+  .vpp-rte h2,
+  .vpp-rte h3,
+  .vpp-rte h4,
+  .vpp-rte strong { color: #111; }
+  .vpp-rte p { margin: 0 0 1rem; }
+  .vpp-rte ul { padding-left: 1.2rem; margin: 0 0 1rem; }
+  .vpp-spec-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+  }
+  .vpp-reviews-fallback { margin-top: 1rem; font-size: 0.9rem; }
+  .vpp-reviews-fallback a { color: var(--vpp-accent, #e53935); }
+
+  /* ── Features ── */
+  .vpp-features {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+    margin-top: 3.5rem;
+    padding-top: 2.5rem;
+    border-top: 1px solid #eee;
+  }
+  @media (min-width: 750px) {
+    .vpp-features { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+  }
+
+  .vpp-feature {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .vpp-feature__icon {
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #ececec;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    letter-spacing: 0.02em;
+  }
+  .vpp-feature__title {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111;
+  }
+  .vpp-feature__text {
+    margin: 0;
+    font-size: 0.875rem;
+    line-height: 1.55;
+    color: #666;
+  }
+
+  /* ── Ratings section ── */
+  .vpp-reviews {
+    margin-top: 4rem;
+    padding-top: 3rem;
+    border-top: 1px solid #eee;
+  }
+  .vpp-reviews__header { margin-bottom: 2rem; }
+  .vpp-reviews__heading {
+    margin: 0 0 0.4rem;
+    font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #111;
+  }
+  .vpp-reviews__sub {
+    margin: 0;
+    color: #777;
+    font-size: 0.9rem;
+  }
+
+  .vpp-reviews__grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+  }
+  @media (min-width: 750px) {
+    .vpp-reviews__grid {
+      grid-template-columns: 200px 1fr;
+      gap: 3rem;
+      align-items: center;
+    }
+  }
+
+  .vpp-reviews__summary { text-align: center; }
+  .vpp-reviews__score {
+    font-size: 3.5rem;
+    font-weight: 800;
+    line-height: 1;
+    color: #111;
+  }
+  .vpp-reviews__count {
+    margin: 0.4rem 0 0;
+    font-size: 0.875rem;
+    color: #777;
+  }
+
+  .vpp-bar-row {
+    display: grid;
+    grid-template-columns: 56px 1fr 40px;
+    gap: 0.75rem;
+    align-items: center;
+    margin-bottom: 0.55rem;
+    font-size: 0.8125rem;
+    color: #666;
+  }
+  .vpp-bar-track {
+    height: 8px;
+    background: #eee;
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .vpp-bar-fill {
+    display: block;
+    height: 100%;
+    background: #f5a623;
+    border-radius: 99px;
+  }
+  .vpp-bar-pct { text-align: right; color: #999; }
+
+  .vpp-review-list {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  @media (min-width: 750px) {
+    .vpp-review-list { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .vpp-review-card {
+    border: 1px solid #eee;
+    padding: 1.25rem 1.35rem;
+    background: #fff;
+  }
+  .vpp-review-card__top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 0.65rem;
+  }
+  .vpp-review-card__date {
+    font-size: 0.75rem;
+    color: #999;
+  }
+  .vpp-review-card__title {
+    margin: 0 0 0.4rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111;
+  }
+  .vpp-review-card__body {
+    margin: 0 0 0.75rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: #555;
+  }
+  .vpp-review-card__author {
+    margin: 0;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: #333;
+  }
+</style>
+
+<script>
+(function () {
+  const root = document.getElementById('vpp-{{ section.id }}');
+  if (!root) return;
+
+  /* ── Gallery ── */
+  const slides = Array.from(root.querySelectorAll('[data-vpp-slide]'));
+  const thumbs = Array.from(root.querySelectorAll('[data-vpp-thumb]'));
+  let activeIndex = 0;
+
+  function showSlide(index) {
+    if (!slides.length) return;
+    activeIndex = (index + slides.length) % slides.length;
+    slides.forEach((slide, i) => {
+      const on = i === activeIndex;
+      slide.classList.toggle('is-active', on);
+      slide.hidden = !on;
+    });
+    thumbs.forEach((thumb, i) => {
+      const on = i === activeIndex;
+      thumb.classList.toggle('is-active', on);
+      thumb.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+  }
+
+  thumbs.forEach((thumb) => {
+    thumb.addEventListener('click', () => showSlide(parseInt(thumb.dataset.index, 10)));
+  });
+  root.querySelector('[data-vpp-prev]')?.addEventListener('click', () => showSlide(activeIndex - 1));
+  root.querySelector('[data-vpp-next]')?.addEventListener('click', () => showSlide(activeIndex + 1));
+
+  /* ── Quantity ── */
+  const qtyInput = root.querySelector('[data-vpp-qty-input]');
+  root.querySelector('[data-vpp-qty-minus]')?.addEventListener('click', () => {
+    const v = parseInt(qtyInput.value, 10) || 1;
+    if (v > 1) qtyInput.value = v - 1;
+  });
+  root.querySelector('[data-vpp-qty-plus]')?.addEventListener('click', () => {
+    const v = parseInt(qtyInput.value, 10) || 1;
+    qtyInput.value = v + 1;
+  });
+
+  /* ── Flash sale countdown ── */
+  const flash = root.querySelector('[data-vpp-flash]');
+  if (flash && flash.dataset.end) {
+    const end = new Date(flash.dataset.end.replace(' ', 'T')).getTime();
+    const hEl = flash.querySelector('[data-vpp-h]');
+    const mEl = flash.querySelector('[data-vpp-m]');
+    const sEl = flash.querySelector('[data-vpp-s]');
+    if (!isNaN(end)) {
+      const tick = () => {
+        const diff = Math.max(0, end - Date.now());
+        const h = Math.floor(diff / 3600000);
+        const m = Math.floor((diff % 3600000) / 60000);
+        const s = Math.floor((diff % 60000) / 1000);
+        if (hEl) hEl.textContent = String(h).padStart(2, '0');
+        if (mEl) mEl.textContent = String(m).padStart(2, '0');
+        if (sEl) sEl.textContent = String(s).padStart(2, '0');
+        if (diff <= 0) clearInterval(timer);
+      };
+      tick();
+      const timer = setInterval(tick, 1000);
+    }
+  }
+
+  /* ── Tabs ── */
+  const tabs = root.querySelectorAll('[data-tab]');
+  const panels = root.querySelectorAll('[data-panel]');
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      const id = tab.dataset.tab;
+      tabs.forEach((t) => {
+        const on = t === tab;
+        t.classList.toggle('is-active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      panels.forEach((panel) => {
+        const on = panel.dataset.panel === id;
+        panel.classList.toggle('is-active', on);
+        panel.hidden = !on;
+      });
+    });
+  });
+
+  root.querySelector('[data-vpp-ask]')?.addEventListener('click', (e) => {
+    e.preventDefault();
+    const customTab = root.querySelector('[data-tab="custom"]');
+    customTab?.click();
+    root.querySelector('#vpp-tabs-{{ section.id }}')?.scrollIntoView({ behavior: 'smooth' });
+  });
+
+  /* ── Share ── */
+  root.querySelector('[data-vpp-share]')?.addEventListener('click', async () => {
+    const btn = root.querySelector('[data-vpp-share]');
+    const shareData = { title: btn.dataset.title, url: btn.dataset.url };
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(shareData.url);
+        btn.textContent = 'Link copied';
+        setTimeout(() => { btn.innerHTML = btn.dataset.original || 'Share'; }, 1500);
+      }
+    } catch (err) { /* user cancelled */ }
+  });
+
+  /* ── Variant selection ── */
+  const variantsJson = root.parentElement.querySelector('[data-vpp-variants-json]') || document.querySelector('#shopify-section-{{ section.id }} [data-vpp-variants-json]');
+  let variants = [];
+  try {
+    variants = JSON.parse((variantsJson && variantsJson.textContent) || '[]');
+  } catch (e) { variants = []; }
+
+  const variantInput = root.querySelector('[data-vpp-variant-input]');
+  const priceSale = root.querySelector('[data-vpp-price-sale]');
+  const priceCompare = root.querySelector('[data-vpp-price-compare]');
+  const discountEl = root.querySelector('[data-vpp-discount]');
+  const skuEl = root.querySelector('[data-vpp-sku]');
+  const availEl = root.querySelector('[data-vpp-availability]');
+  const atcBtn = root.querySelector('[data-vpp-atc]');
+  const atcText = root.querySelector('[data-vpp-atc-text]');
+  const moneyFormat = {{ shop.money_format | json }};
+
+  function formatMoney(cents) {
+    const amount = (cents / 100).toFixed(2);
+    if (typeof Shopify !== 'undefined' && Shopify.formatMoney) {
+      return Shopify.formatMoney(cents, moneyFormat);
+    }
+    return moneyFormat.replace(/\{\{\s*amount\s*\}\}/, amount)
+      .replace(/\{\{\s*amount_no_decimals\s*\}\}/, String(Math.round(cents / 100)))
+      .replace(/\{\{\s*amount_with_comma_separator\s*\}\}/, amount.replace('.', ','));
+  }
+
+  function getSelectedOptions() {
+    const selected = {};
+    root.querySelectorAll('[data-vpp-option]:checked').forEach((input) => {
+      selected[parseInt(input.dataset.optionPosition, 10)] = input.value;
+    });
+    return selected;
+  }
+
+  function findVariant() {
+    const selected = getSelectedOptions();
+    return variants.find((v) => {
+      return v.options.every((opt, i) => selected[i + 1] === opt);
+    });
+  }
+
+  function updateVariantUI() {
+    const variant = findVariant();
+    if (!variant) return;
+
+    if (variantInput) variantInput.value = variant.id;
+    root.dataset.variantId = variant.id;
+
+    if (priceSale) priceSale.textContent = formatMoney(variant.price);
+
+    const onSale = variant.compare_at_price && variant.compare_at_price > variant.price;
+    if (priceCompare) {
+      priceCompare.textContent = onSale ? formatMoney(variant.compare_at_price) : '';
+      priceCompare.classList.toggle('is-hidden', !onSale);
+    }
+    if (discountEl) {
+      if (onSale) {
+        const pct = Math.round(((variant.compare_at_price - variant.price) / variant.compare_at_price) * 100);
+        discountEl.textContent = '-' + pct + '%';
+      }
+      discountEl.classList.toggle('is-hidden', !onSale);
+    }
+
+    if (skuEl) skuEl.textContent = variant.sku || 'N/A';
+
+    if (availEl) {
+      availEl.textContent = variant.available ? 'In stock, ready to ship' : 'Out of stock';
+      availEl.classList.toggle('is-in', variant.available);
+      availEl.classList.toggle('is-out', !variant.available);
+    }
+
+    if (atcBtn) atcBtn.disabled = !variant.available;
+    if (atcText) atcText.textContent = variant.available ? 'ADD TO CART' : 'SOLD OUT';
+
+    /* Update swatch selected state */
+    root.querySelectorAll('.vpp-swatch').forEach((label) => {
+      const input = label.querySelector('input');
+      label.classList.toggle('is-selected', !!(input && input.checked));
+    });
+
+    /* Sync featured image if variant has one */
+    if (variant.featured_media || variant.featured_image) {
+      const mediaId = variant.featured_media ? variant.featured_media.id : null;
+      if (mediaId) {
+        const thumb = thumbs.find((t) => {
+          /* thumbs are ordered by product.media; try match via index from media */
+          return false;
+        });
+      }
+      const imgSrc = variant.featured_image;
+      if (imgSrc) {
+        const matchIndex = slides.findIndex((slide) => {
+          const img = slide.querySelector('img');
+          return img && imgSrc.src && img.src.includes(String(imgSrc.id || ''));
+        });
+        /* Prefer matching by product media position stored on variant */
+        if (variant.featured_image && typeof variant.featured_image.position === 'number') {
+          showSlide(Math.max(0, variant.featured_image.position - 1));
+        }
+      }
+    }
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('variant', variant.id);
+    window.history.replaceState({}, '', url.toString());
+  }
+
+  root.querySelectorAll('[data-vpp-option]').forEach((input) => {
+    input.addEventListener('change', updateVariantUI);
+  });
+
+  /* ── Add to cart ── */
+  const form = root.querySelector('.vpp-form');
+  form?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!atcBtn || atcBtn.disabled) return;
+
+    const formData = new FormData(form);
+    atcBtn.classList.add('is-loading');
+
+    fetch(window.Shopify?.routes?.root ? window.Shopify.routes.root + 'cart/add.js' : '/cart/add.js', {
+      method: 'POST',
+      headers: { Accept: 'application/json' },
+      body: formData
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        atcBtn.classList.remove('is-loading');
+        if (data.status) {
+          alert(data.description || data.message || 'Could not add to cart');
+          return;
+        }
+        document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+        document.dispatchEvent(new CustomEvent('cart:open', { bubbles: true }));
+        /* Open cart drawer if present */
+        const drawer = document.querySelector('cart-drawer-component, cart-drawer, [data-cart-drawer]');
+        if (drawer) {
+          if (typeof drawer.open === 'function') drawer.open();
+          else drawer.setAttribute('open', '');
+        }
+      })
+      .catch(() => {
+        atcBtn.classList.remove('is-loading');
+        alert('Could not add to cart. Please try again.');
+      });
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Vape Product Page",
+  "tag": "section",
+  "class": "section-vape-product-page",
+  "enabled_on": {
+    "templates": ["product"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Pricing & Inventory"
+    },
+    {
+      "type": "range",
+      "id": "inventory_threshold",
+      "label": "Low stock threshold",
+      "min": 5,
+      "max": 50,
+      "step": 1,
+      "default": 20,
+      "info": "Shows the hurry progress bar when stock is at or below this number."
+    },
+    {
+      "type": "checkbox",
+      "id": "force_inventory_bar",
+      "label": "Always show inventory bar when in stock",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Flash Sale"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_flash_sale",
+      "label": "Show flash sale banner",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "flash_sale_label",
+      "label": "Flash sale label",
+      "default": "FLASH SALE"
+    },
+    {
+      "type": "text",
+      "id": "flash_sale_end",
+      "label": "Countdown end (YYYY-MM-DD HH:MM)",
+      "info": "Example: 2026-08-15 23:59",
+      "default": "2026-12-31 23:59"
+    },
+    {
+      "type": "header",
+      "content": "Reviews fallback"
+    },
+    {
+      "type": "text",
+      "id": "fallback_rating",
+      "label": "Fallback rating (if no review app data)",
+      "default": "4.8"
+    },
+    {
+      "type": "number",
+      "id": "fallback_review_count",
+      "label": "Fallback review count",
+      "default": 10
+    },
+    {
+      "type": "text",
+      "id": "reviews_heading",
+      "label": "Reviews section heading",
+      "default": "Customer Reviews"
+    },
+    {
+      "type": "range",
+      "id": "dist_5",
+      "label": "5-star distribution %",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 72
+    },
+    {
+      "type": "range",
+      "id": "dist_4",
+      "label": "4-star distribution %",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 18
+    },
+    {
+      "type": "range",
+      "id": "dist_3",
+      "label": "3-star distribution %",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "dist_2",
+      "label": "2-star distribution %",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "dist_1",
+      "label": "1-star distribution %",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "header",
+      "content": "Custom tab"
+    },
+    {
+      "type": "text",
+      "id": "custom_tab_label",
+      "label": "Custom tab label",
+      "default": "Contact Us"
+    },
+    {
+      "type": "richtext",
+      "id": "custom_tab_content",
+      "label": "Custom tab content"
+    },
+    {
+      "type": "header",
+      "content": "Extras"
+    },
+    {
+      "type": "url",
+      "id": "wishlist_url",
+      "label": "Wishlist page URL"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "Show payment icons",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "payment_label",
+      "label": "Payment icons label",
+      "default": "Guaranteed Safe Checkout"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "section_bg",
+      "label": "Section background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent",
+      "default": "#e53935"
+    },
+    {
+      "type": "color",
+      "id": "sale_color",
+      "label": "Sale price",
+      "default": "#e53935"
+    },
+    {
+      "type": "color",
+      "id": "badge_color",
+      "label": "Discount badge",
+      "default": "#ffb74d"
+    },
+    {
+      "type": "color",
+      "id": "button_bg",
+      "label": "Add to cart background",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "button_text",
+      "label": "Add to cart text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    }
+  ],
+  "blocks": [
+    {
+      "type": "feature",
+      "name": "Feature highlight",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "text",
+          "id": "icon_text",
+          "label": "Icon letters",
+          "default": "TR"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "Free delivery"
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Text",
+          "default": "For all orders over $99, always free delivery."
+        }
+      ]
+    },
+    {
+      "type": "review",
+      "name": "Customer review",
+      "settings": [
+        {
+          "type": "range",
+          "id": "rating",
+          "label": "Star rating",
+          "min": 1,
+          "max": 5,
+          "step": 1,
+          "default": 5
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Review title",
+          "default": "Great product"
+        },
+        {
+          "type": "textarea",
+          "id": "body",
+          "label": "Review text",
+          "default": "Excellent quality and fast shipping. Highly recommend!"
+        },
+        {
+          "type": "text",
+          "id": "author",
+          "label": "Author name",
+          "default": "Alex M."
+        },
+        {
+          "type": "text",
+          "id": "date",
+          "label": "Date",
+          "default": "July 2026"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Product Page",
+      "category": "Products",
+      "blocks": [
+        {
+          "type": "feature",
+          "settings": {
+            "icon_text": "TR",
+            "title": "Free delivery",
+            "text": "For all orders over $99, always free delivery."
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "icon_text": "90",
+            "title": "90 Days return",
+            "text": "If goods have problems, 90 days returns."
+          }
+        },
+        {
+          "type": "feature",
+          "settings": {
+            "icon_text": "CC",
+            "title": "Secure Payment",
+            "text": "100% secure payment, support multi cards."
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 5,
+            "title": "Perfect coils",
+            "body": "Flavour is incredible and they last much longer than others I've tried.",
+            "author": "Jordan K.",
+            "date": "July 2026"
+          }
+        },
+        {
+          "type": "review",
+          "settings": {
+            "rating": 4,
+            "title": "Solid quality",
+            "body": "Great build and packaging. Shipping was quick too.",
+            "author": "Sam R.",
+            "date": "June 2026"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

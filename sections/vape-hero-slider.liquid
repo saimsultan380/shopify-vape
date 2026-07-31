@@ -1,0 +1,1172 @@
+{%- comment -%}
+  ============================================================
+  Vape Hero Slider — sections/vape-hero-slider.liquid
+
+  Professional, fully-responsive full-width hero slider built
+  for the Shopify Horizon theme. Matches VapeHub reference:
+    • Full-viewport dark hero with background image
+    • Left-aligned heading + subtext + CTA button
+    • Vertical dot nav + up/down arrows on the right side
+    • Auto-play, swipe, keyboard accessible
+    • Every value is configurable in the Theme Customizer
+    • Zero hardcoded text or images
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign slide_count = 0
+  for block in section.blocks
+    if block.type == 'slide'
+      assign slide_count = slide_count | plus: 1
+    endif
+  endfor
+
+  assign first_slide_lazy = false
+-%}
+
+{%- comment -%} Per-section CSS variables {%- endcomment -%}
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --vhs-height-desktop:   {{ section.settings.slide_height }};
+    {% if section.settings.slide_height_mobile == 'custom' %}
+      --vhs-height-mobile:  {{ section.settings.mobile_height_custom_px }}px;
+    {% else %}
+      --vhs-height-mobile:   {{ section.settings.slide_height_mobile }};
+    {% endif %}
+    --vhs-transition:       {{ section.settings.transition_duration }}ms;
+    display: block;
+  }
+{% endstyle %}
+
+<div
+  id="vhs-{{ section.id }}"
+  class="vhs vhs--nav-{{ section.settings.nav_position }}"
+  data-autoplay="{{ section.settings.autoplay }}"
+  data-autoplay-speed="{{ section.settings.autoplay_speed | times: 1000 }}"
+  data-transition-duration="{{ section.settings.transition_duration }}"
+  data-slide-count="{{ slide_count }}"
+  role="region"
+  aria-label="{{ section.settings.aria_label | default: 'Hero slideshow' }}"
+  tabindex="0"
+>
+
+  {%- comment -%}======================== SLIDES ========================{%- endcomment -%}
+  <div class="vhs__track" aria-live="polite" aria-atomic="false">
+
+    {%- assign slide_index = 0 -%}
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'slide' -%}
+        {%- liquid
+          if slide_index == 0
+            assign is_active    = true
+            assign aria_hidden  = 'false'
+            assign load_eager   = 'eager'
+            assign fetchpriority = 'high'
+          else
+            assign is_active    = false
+            assign aria_hidden  = 'true'
+            assign load_eager   = 'lazy'
+            assign fetchpriority = 'auto'
+          endif
+
+          assign ov_opacity = block.settings.overlay_opacity | divided_by: 100.0
+        -%}
+
+        <div
+          class="vhs__slide{% if is_active %} vhs__slide--active{% endif %}"
+          id="vhs-slide-{{ section.id }}-{{ slide_index }}"
+          {{ block.shopify_attributes }}
+          aria-hidden="{{ aria_hidden }}"
+          role="group"
+          aria-roledescription="slide"
+          aria-label="Slide {{ slide_index | plus: 1 }} of {{ slide_count }}"
+          style="
+            --vhs-img-x:           {{ block.settings.image_position_x }}%;
+            --vhs-img-y:           {{ block.settings.image_position_y }}%;
+            --vhs-overlay-color:   {{ block.settings.overlay_color | default: '#000000' }};
+            --vhs-overlay-opacity: {{ ov_opacity }};
+            --vhs-content-max-w:   {{ block.settings.content_max_width }}px;
+            --vhs-heading-color:   {{ block.settings.heading_color | default: '#ffffff' }};
+            --vhs-sub-color:       {{ block.settings.subheading_color | default: '#cccccc' }};
+          "
+        >
+
+          {%- comment -%} ── Background image ── {%- endcomment -%}
+          <div class="vhs__bg" aria-hidden="true">
+            {%- if block.settings.image != blank -%}
+
+              {%- comment -%} Desktop image (always rendered) {%- endcomment -%}
+              {{-
+                block.settings.image
+                | image_url: width: 1920
+                | image_tag:
+                  loading:       load_eager,
+                  fetchpriority: fetchpriority,
+                  class:         'vhs__bg-img vhs__bg-img--desktop',
+                  widths:        '375, 550, 750, 900, 1100, 1400, 1600, 1920',
+                  sizes:         '100vw',
+                  alt:           block.settings.image.alt | default: block.settings.heading | escape
+              -}}
+
+              {%- comment -%} Mobile image (optional override) {%- endcomment -%}
+              {%- if block.settings.image_mobile != blank -%}
+                {{-
+                  block.settings.image_mobile
+                  | image_url: width: 750
+                  | image_tag:
+                    loading: 'lazy',
+                    class:   'vhs__bg-img vhs__bg-img--mobile',
+                    widths:  '375, 550, 750',
+                    sizes:   '100vw',
+                    alt:     block.settings.image_mobile.alt | default: block.settings.heading | escape
+                -}}
+              {%- endif -%}
+
+            {%- else -%}
+              {%- comment -%} Placeholder (theme editor / no image set) {%- endcomment -%}
+              <div class="vhs__bg-placeholder">
+                {{- 'lifestyle-1' | placeholder_svg_tag: 'vhs__bg-placeholder-svg' -}}
+              </div>
+            {%- endif -%}
+          </div>
+
+          {%- comment -%} ── Dark overlay ── {%- endcomment -%}
+          <div class="vhs__overlay" aria-hidden="true"></div>
+
+          {%- comment -%} ── Slide content ── {%- endcomment -%}
+          <div class="vhs__content
+                       vhs__content--h-{{ block.settings.content_h_position | default: 'left' }}
+                       vhs__content--v-{{ block.settings.content_v_position | default: 'center' }}">
+            <div class="vhs__content-inner">
+
+              {%- if block.settings.heading != blank -%}
+                <h2 class="vhs__heading vhs__heading--{{ block.settings.heading_size | default: 'large' }}">
+                  {{- block.settings.heading | escape -}}
+                </h2>
+              {%- endif -%}
+
+              {%- if block.settings.subheading != blank -%}
+                <div class="vhs__subheading">
+                  {{- block.settings.subheading -}}
+                </div>
+              {%- endif -%}
+
+              {%- if block.settings.button_label != blank -%}
+                <div class="vhs__btn-wrap">
+                  <a
+                    href="{{ block.settings.button_url | default: shop.url }}"
+                    class="vhs__btn vhs__btn--{{ block.settings.button_style | default: 'outline' }}"
+                    {% if block.settings.button_url == blank %}
+                      aria-disabled="true"
+                    {% endif %}
+                  >
+                    {{- block.settings.button_label -}}
+                  </a>
+                </div>
+              {%- endif -%}
+
+            </div>
+          </div>
+
+        </div>
+
+        {%- assign slide_index = slide_index | plus: 1 -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+  </div>
+  {%- comment -%}======================== END SLIDES ========================{%- endcomment -%}
+
+
+  {%- comment -%}======================== NAVIGATION ========================{%- endcomment -%}
+  {%- if section.settings.show_nav and slide_count > 1 -%}
+    <nav
+      class="vhs__nav"
+      role="group"
+      aria-label="Slideshow controls"
+    >
+      {%- comment -%} Previous (up) arrow {%- endcomment -%}
+      <button
+        type="button"
+        class="vhs__nav-arrow vhs__nav-arrow--prev"
+        aria-label="Previous slide"
+        aria-controls="vhs-{{ section.id }}"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+      </button>
+
+      {%- comment -%} Dot indicators {%- endcomment -%}
+      <div class="vhs__nav-dots" role="tablist">
+        {%- assign dot_index = 0 -%}
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'slide' -%}
+            <button
+              type="button"
+              class="vhs__dot{% if dot_index == 0 %} vhs__dot--active{% endif %}"
+              role="tab"
+              aria-selected="{{ dot_index | prepend: '' | replace: '0', 'true' | replace: '1', 'false' | replace: '2', 'false' | replace: '3', 'false' | replace: '4', 'false' | replace: '5', 'false' | replace: '6', 'false' | replace: '7', 'false' | replace: '8', 'false' | replace: '9', 'false' }}"
+              aria-controls="vhs-slide-{{ section.id }}-{{ dot_index }}"
+              aria-label="Go to slide {{ dot_index | plus: 1 }}"
+              data-index="{{ dot_index }}"
+            ></button>
+            {%- assign dot_index = dot_index | plus: 1 -%}
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+
+      {%- comment -%} Next (down) arrow {%- endcomment -%}
+      <button
+        type="button"
+        class="vhs__nav-arrow vhs__nav-arrow--next"
+        aria-label="Next slide"
+        aria-controls="vhs-{{ section.id }}"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false">
+          <polyline points="6 9 12 15 18 9"></polyline>
+        </svg>
+      </button>
+    </nav>
+  {%- endif -%}
+
+  {%- comment -%} Slide counter badge (bottom-left) {%- endcomment -%}
+  {%- if slide_count > 1 -%}
+    <div class="vhs__counter" aria-hidden="true">
+      <span class="vhs__counter-current">01</span>
+      <span class="vhs__counter-sep">&nbsp;/&nbsp;</span>
+      <span class="vhs__counter-total">
+        {%- if slide_count < 10 -%}0{%- endif -%}{{ slide_count }}
+      </span>
+    </div>
+  {%- endif -%}
+
+</div>
+{%- comment -%}======================== END VHS WRAPPER ========================{%- endcomment -%}
+
+
+{%- comment -%}======================== STYLES ========================{%- endcomment -%}
+<style>
+  /* ============================================================
+     VAPE HERO SLIDER (vhs) — Scoped component styles
+     Prefix: .vhs
+  ============================================================ */
+
+  /* Root wrapper */
+  .vhs {
+    position: relative;
+    width: 100%;
+    overflow: hidden;
+    background: #080808;
+    height: var(--vhs-height-desktop, 100dvh);
+    /* Prevent flash of unstyled content */
+    contain: layout style;
+  }
+
+  @media (max-width: 749px) {
+    .vhs { height: var(--vhs-height-mobile, 100dvh); }
+  }
+
+  /* ── Track ── */
+  .vhs__track {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* ── Individual slides ── */
+  .vhs__slide {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    z-index: 1;
+    transition: opacity var(--vhs-transition, 800ms) cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vhs__slide { transition: none; }
+  }
+
+  .vhs__slide--active {
+    opacity: 1;
+    z-index: 2;
+    pointer-events: auto;
+  }
+
+  /* ── Background ── */
+  .vhs__bg {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .vhs__bg-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--vhs-img-x, 50%) var(--vhs-img-y, 50%);
+    display: block;
+    /* Slight Ken Burns animation on active slide */
+    transform: scale(1.04);
+    transition: transform 8s ease-out;
+  }
+
+  .vhs__slide--active .vhs__bg-img {
+    transform: scale(1);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vhs__bg-img { transform: scale(1); transition: none; }
+  }
+
+  /* Desktop/mobile image switching */
+  .vhs__bg-img--mobile { display: none; }
+
+  @media (max-width: 749px) {
+    .vhs__bg-img--desktop:not(:only-child) { display: none; }
+    .vhs__bg-img--mobile                   { display: block; }
+  }
+
+  /* Placeholder (no image) */
+  .vhs__bg-placeholder {
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #080808 0%, #1a1a2e 60%, #0d0d0d 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vhs__bg-placeholder-svg {
+    width: 60%;
+    height: 60%;
+    opacity: 0.15;
+    color: #fff;
+  }
+
+  /* ── Overlay ── */
+  .vhs__overlay {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    background: var(--vhs-overlay-color, #000);
+    opacity: var(--vhs-overlay-opacity, 0.4);
+    pointer-events: none;
+  }
+
+  /* ── Content wrapper ── */
+  .vhs__content {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    display: flex;
+    /* Right padding accounts for the nav bar so text never overlaps it */
+    padding: clamp(1.5rem, 5vw, 5rem);
+    padding-right: calc(clamp(1.5rem, 5vw, 5rem) + 56px);
+  }
+
+  /* Horizontal positions */
+  .vhs__content--h-left   { justify-content: flex-start; }
+  .vhs__content--h-center { justify-content: center; }
+  .vhs__content--h-right  { justify-content: flex-end; }
+
+  /* Vertical positions */
+  .vhs__content--v-top {
+    align-items: flex-start;
+    /* Offset by header group height so content doesn't hide behind the header */
+    padding-top: calc(var(--header-group-height, 80px) + clamp(1.5rem, 3vw, 3rem));
+  }
+  .vhs__content--v-center { align-items: center; }
+  .vhs__content--v-bottom { align-items: flex-end; }
+
+  /* Inner content box */
+  .vhs__content-inner {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.875rem, 2vw, 1.375rem);
+    max-width: var(--vhs-content-max-w, 550px);
+    width: 100%;
+  }
+
+  .vhs__content--h-center .vhs__content-inner { text-align: center; }
+  .vhs__content--h-right  .vhs__content-inner { text-align: right;  }
+
+  /* ── Heading ── */
+  .vhs__heading {
+    margin: 0;
+    font-family: var(--font-primary--family, system-ui, sans-serif);
+    font-weight: 800;
+    text-transform: uppercase;
+    line-height: 1.08;
+    letter-spacing: 0.025em;
+    color: var(--vhs-heading-color, #ffffff);
+    /* Entrance animation */
+    opacity: 0;
+    transform: translateY(18px);
+    transition: opacity 0.7s ease 0.15s, transform 0.7s ease 0.15s;
+  }
+
+  .vhs__slide--active .vhs__heading {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vhs__heading { opacity: 1; transform: none; transition: none; }
+  }
+
+  /* Size variants */
+  .vhs__heading--small  { font-size: clamp(1.25rem, 2.5vw,      2rem); }
+  .vhs__heading--medium { font-size: clamp(1.75rem, 3.5vw,      3rem); }
+  .vhs__heading--large  { font-size: clamp(2rem,    4vw + .5rem, 4rem); }
+  .vhs__heading--xlarge { font-size: clamp(2.5rem,  5vw + .5rem, 5rem); }
+
+  /* ── Subheading ── */
+  .vhs__subheading {
+    color: var(--vhs-sub-color, rgba(255,255,255,0.75));
+    font-size: clamp(0.8125rem, 1.2vw, 1rem);
+    line-height: 1.7;
+    /* Entrance animation */
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity 0.7s ease 0.28s, transform 0.7s ease 0.28s;
+  }
+
+  .vhs__slide--active .vhs__subheading {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vhs__subheading { opacity: 1; transform: none; transition: none; }
+  }
+
+  .vhs__subheading p { margin: 0; }
+
+  /* ── CTA button ── */
+  .vhs__btn-wrap {
+    display: flex;
+    /* Entrance animation */
+    opacity: 0;
+    transform: translateY(12px);
+    transition: opacity 0.7s ease 0.42s, transform 0.7s ease 0.42s;
+  }
+
+  .vhs__slide--active .vhs__btn-wrap {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vhs__btn-wrap { opacity: 1; transform: none; transition: none; }
+  }
+
+  .vhs__content--h-center .vhs__btn-wrap { justify-content: center; }
+  .vhs__content--h-right  .vhs__btn-wrap { justify-content: flex-end; }
+
+  .vhs__btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.875rem 2.125rem;
+    font-family: var(--font-primary--family, system-ui, sans-serif);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition:
+      background    0.3s ease,
+      color         0.3s ease,
+      border-color  0.3s ease,
+      transform     0.2s ease,
+      box-shadow    0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .vhs__btn:hover  { transform: translateY(-2px); }
+  .vhs__btn:active { transform: translateY(0); }
+
+  /* Outline (white border, transparent bg — matches reference image) */
+  .vhs__btn--outline {
+    background: transparent;
+    border: 2px solid rgba(255,255,255,0.85);
+    color: #fff;
+  }
+  .vhs__btn--outline:hover {
+    background: #fff;
+    border-color: #fff;
+    color: #080808;
+  }
+
+  /* Solid white */
+  .vhs__btn--solid {
+    background: #fff;
+    border: 2px solid #fff;
+    color: #080808;
+  }
+  .vhs__btn--solid:hover {
+    background: transparent;
+    color: #fff;
+  }
+
+  /* Solid accent/red */
+  .vhs__btn--solid-red {
+    background: #e53935;
+    border: 2px solid #e53935;
+    color: #fff;
+  }
+  .vhs__btn--solid-red:hover {
+    background: transparent;
+    border-color: #e53935;
+    color: #e53935;
+  }
+
+  /* ── Right-side vertical navigation (default) ── */
+  .vhs__nav {
+    position: absolute;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.375rem;
+  }
+
+  .vhs--nav-right .vhs__nav {
+    right: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .vhs--nav-left .vhs__nav {
+    left: 1.25rem;
+    top: 50%;
+    transform: translateY(-50%);
+  }
+
+  .vhs--nav-bottom .vhs__nav {
+    bottom: 1.75rem;
+    left: 50%;
+    transform: translateX(-50%);
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .vhs--nav-bottom .vhs__nav-dots { flex-direction: row; }
+
+  /* Arrow buttons */
+  .vhs__nav-arrow {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.28);
+    color: rgba(255,255,255,0.75);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.22s ease, border-color 0.22s ease, color 0.22s ease;
+    border-radius: 0;
+  }
+
+  .vhs__nav-arrow:hover {
+    background: rgba(255,255,255,0.18);
+    border-color: rgba(255,255,255,0.75);
+    color: #fff;
+  }
+
+  .vhs__nav-arrow:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+  }
+
+  /* Dot indicators */
+  .vhs__nav-dots {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.2rem 0;
+  }
+
+  .vhs__dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: background 0.3s ease, transform 0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .vhs__dot:hover:not(.vhs__dot--active) { background: rgba(255,255,255,0.6); }
+
+  .vhs__dot--active {
+    background: #fff;
+    transform: scale(1.45);
+  }
+
+  .vhs__dot:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 3px;
+  }
+
+  /* ── Slide counter (bottom-left) ── */
+  .vhs__counter {
+    position: absolute;
+    bottom: 1.5rem;
+    left: clamp(1.5rem, 5vw, 5rem);
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    color: rgba(255,255,255,0.45);
+  }
+
+  .vhs__counter-current { color: rgba(255,255,255,0.9); }
+
+  /* ── Responsive adjustments ── */
+  @media (max-width: 749px) {
+    .vhs__content {
+      padding: clamp(1rem, 4vw, 1.5rem);
+      padding-right: calc(clamp(1rem, 4vw, 1.5rem) + 40px);
+    }
+
+    .vhs__content-inner {
+      gap: clamp(0.5rem, 2.5vw, 0.875rem);
+    }
+
+    .vhs--nav-right .vhs__nav { right: 0.5rem; }
+    .vhs--nav-left  .vhs__nav { left:  0.5rem; }
+
+    .vhs__nav-arrow { width: 22px; height: 22px; }
+    .vhs__dot       { width: 5px; height: 5px; }
+    .vhs__counter   { display: none; }
+
+    .vhs__heading--large  { font-size: clamp(1.5rem, 6.5vw, 2.25rem); }
+    .vhs__heading--xlarge { font-size: clamp(1.75rem, 7.5vw, 2.5rem); }
+
+    .vhs__btn {
+      padding: 0.65rem 1.5rem;
+      font-size: 0.625rem;
+    }
+  }
+</style>
+
+
+{%- comment -%}======================== JAVASCRIPT ========================{%- endcomment -%}
+<script>
+(function () {
+  'use strict';
+
+  /**
+   * VapeHeroSlider
+   * Lightweight, accessible hero slider component.
+   * No external dependencies — vanilla JS only.
+   */
+  class VapeHeroSlider {
+    constructor(rootEl) {
+      this.root        = rootEl;
+      this.slides      = Array.from(rootEl.querySelectorAll('.vhs__slide'));
+      this.dots        = Array.from(rootEl.querySelectorAll('.vhs__dot'));
+      this.prevBtn     = rootEl.querySelector('.vhs__nav-arrow--prev');
+      this.nextBtn     = rootEl.querySelector('.vhs__nav-arrow--next');
+      this.counterEl   = rootEl.querySelector('.vhs__counter-current');
+      this.total       = this.slides.length;
+      this.current     = 0;
+      this.isAnimating = false;
+
+      /* Config from data attributes set by Liquid schema */
+      this.doAutoplay   = rootEl.dataset.autoplay === 'true';
+      this.speed        = parseInt(rootEl.dataset.autoplaySpeed,    10) || 5000;
+      this.transMs      = parseInt(rootEl.dataset.transitionDuration, 10) || 800;
+      this.timer        = null;
+
+      if (this.total < 2) return; // single slide — no controls needed
+      this._init();
+    }
+
+    /* ── Initialise ── */
+    _init() {
+      this.prevBtn?.addEventListener('click', () => this._userGoTo(this.current - 1));
+      this.nextBtn?.addEventListener('click', () => this._userGoTo(this.current + 1));
+
+      this.dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => this._userGoTo(i));
+      });
+
+      /* Pause on hover/focus */
+      this.root.addEventListener('mouseenter', () => this._stopAutoplay());
+      this.root.addEventListener('mouseleave', () => { if (this.doAutoplay) this._startAutoplay(); });
+      this.root.addEventListener('focusin',    () => this._stopAutoplay());
+      this.root.addEventListener('focusout',   () => { if (this.doAutoplay) this._startAutoplay(); });
+
+      /* Keyboard navigation */
+      this.root.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowUp'    || e.key === 'ArrowLeft')  { e.preventDefault(); this._userGoTo(this.current - 1); }
+        if (e.key === 'ArrowDown'  || e.key === 'ArrowRight') { e.preventDefault(); this._userGoTo(this.current + 1); }
+      });
+
+      /* Touch / swipe */
+      this._initTouch();
+
+      /* Shopify theme editor events */
+      document.addEventListener('shopify:section:load', () => this._reinit());
+
+      if (this.doAutoplay) this._startAutoplay();
+    }
+
+    /* User-triggered navigation (also resets autoplay timer) */
+    _userGoTo(index) {
+      if (this.doAutoplay) {
+        this._stopAutoplay();
+        this._startAutoplay();
+      }
+      this.goTo(index);
+    }
+
+    /* Core transition */
+    goTo(index) {
+      if (this.isAnimating) return;
+      const target = ((index % this.total) + this.total) % this.total;
+      if (target === this.current) return;
+
+      this.isAnimating = true;
+
+      /* Update slides */
+      this.slides[this.current].classList.remove('vhs__slide--active');
+      this.slides[this.current].setAttribute('aria-hidden', 'true');
+      this.slides[target].classList.add('vhs__slide--active');
+      this.slides[target].setAttribute('aria-hidden', 'false');
+
+      /* Update dots */
+      this.dots[this.current]?.classList.remove('vhs__dot--active');
+      this.dots[this.current]?.setAttribute('aria-selected', 'false');
+      this.dots[target]?.classList.add('vhs__dot--active');
+      this.dots[target]?.setAttribute('aria-selected', 'true');
+
+      /* Update counter */
+      if (this.counterEl) {
+        const num = target + 1;
+        this.counterEl.textContent = num < 10 ? '0' + num : '' + num;
+      }
+
+      this.current = target;
+
+      /* Unlock after transition completes */
+      window.setTimeout(() => { this.isAnimating = false; }, this.transMs + 50);
+    }
+
+    _startAutoplay() {
+      this._stopAutoplay();
+      /* Honour prefers-reduced-motion */
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      this.timer = window.setInterval(() => this.goTo(this.current + 1), this.speed);
+    }
+
+    _stopAutoplay() {
+      if (this.timer) { window.clearInterval(this.timer); this.timer = null; }
+    }
+
+    _reinit() {
+      this._stopAutoplay();
+      this.goTo(0);
+      if (this.doAutoplay) this._startAutoplay();
+    }
+
+    /* Touch / swipe support */
+    _initTouch() {
+      let startX = 0, startY = 0;
+      const THRESHOLD = 40;
+
+      this.root.addEventListener('touchstart', (e) => {
+        startX = e.touches[0].clientX;
+        startY = e.touches[0].clientY;
+      }, { passive: true });
+
+      this.root.addEventListener('touchend', (e) => {
+        const dx = e.changedTouches[0].clientX - startX;
+        const dy = e.changedTouches[0].clientY - startY;
+
+        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > THRESHOLD) {
+          /* Vertical swipe */
+          if (dy < 0) this._userGoTo(this.current + 1);
+          else        this._userGoTo(this.current - 1);
+        } else if (Math.abs(dx) > THRESHOLD) {
+          /* Horizontal swipe */
+          if (dx < 0) this._userGoTo(this.current + 1);
+          else        this._userGoTo(this.current - 1);
+        }
+      }, { passive: true });
+    }
+  }
+
+  /* ── Bootstrap all slider instances on the page ── */
+  function initAll() {
+    document.querySelectorAll('.vhs:not([data-vhs-ready])').forEach((el) => {
+      el.dataset.vhsReady = '1';
+      new VapeHeroSlider(el);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll, { once: true });
+  } else {
+    initAll();
+  }
+
+  /* Re-initialise after Shopify section hot-reload */
+  document.addEventListener('shopify:section:load', (e) => {
+    const section = e.target;
+    if (!section) return;
+    section.querySelectorAll('.vhs').forEach((el) => {
+      delete el.dataset.vhsReady;
+    });
+    initAll();
+  });
+
+})();
+</script>
+
+
+{% schema %}
+{
+  "name": "Vape Hero Slider",
+  "class": "section-vape-hero-slider",
+  "tag": "div",
+  "max_blocks": 10,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Slider Settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Auto-play slides",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "autoplay_speed",
+      "label": "Auto-play interval",
+      "min": 2,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "default": 5
+    },
+    {
+      "type": "range",
+      "id": "transition_duration",
+      "label": "Slide transition speed",
+      "min": 300,
+      "max": 1200,
+      "step": 100,
+      "unit": "ms",
+      "default": 800
+    },
+    {
+      "type": "header",
+      "content": "Slide Height"
+    },
+    {
+      "type": "select",
+      "id": "slide_height",
+      "label": "Slide height — Desktop",
+      "options": [
+        { "value": "55vh",   "label": "Medium (55vh)"     },
+        { "value": "70vh",   "label": "Large (70vh)"      },
+        { "value": "85vh",   "label": "Extra large (85vh)"},
+        { "value": "100dvh", "label": "Full screen"       }
+      ],
+      "default": "100dvh"
+    },
+    {
+      "type": "select",
+      "id": "slide_height_mobile",
+      "label": "Slide height — Mobile",
+      "options": [
+        { "value": "380px",  "label": "Compact (380px)"   },
+        { "value": "450px",  "label": "Medium Compact (450px)" },
+        { "value": "50vh",   "label": "Half screen (50vh)" },
+        { "value": "55vh",   "label": "Balanced (55vh)"   },
+        { "value": "65vh",   "label": "Large (65vh)"      },
+        { "value": "75vh",   "label": "Extra large (75vh)"},
+        { "value": "100dvh", "label": "Full screen (100dvh)" },
+        { "value": "custom", "label": "Custom Pixel Height" }
+      ],
+      "default": "55vh"
+    },
+    {
+      "type": "range",
+      "id": "mobile_height_custom_px",
+      "label": "Custom Mobile Height (px)",
+      "min": 300,
+      "max": 800,
+      "step": 10,
+      "unit": "px",
+      "default": 420,
+      "info": "Only applies if 'Custom Pixel Height' is selected above."
+    },
+    {
+      "type": "header",
+      "content": "Navigation"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_nav",
+      "label": "Show slide navigation",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "nav_position",
+      "label": "Navigation position",
+      "options": [
+        { "value": "right",  "label": "Right (vertical)"     },
+        { "value": "left",   "label": "Left (vertical)"      },
+        { "value": "bottom", "label": "Bottom (horizontal)"  }
+      ],
+      "default": "right"
+    },
+    {
+      "type": "header",
+      "content": "Accessibility"
+    },
+    {
+      "type": "text",
+      "id": "aria_label",
+      "label": "Slider ARIA label",
+      "default": "Featured products slideshow",
+      "info": "Descriptive label read by screen readers."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "Slide",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Background Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Desktop image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image_mobile",
+          "label": "Mobile image",
+          "info": "Optional — if blank the desktop image is used on mobile."
+        },
+        {
+          "type": "range",
+          "id": "image_position_x",
+          "label": "Image focus — horizontal",
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "unit": "%",
+          "default": 50
+        },
+        {
+          "type": "range",
+          "id": "image_position_y",
+          "label": "Image focus — vertical",
+          "min": 0,
+          "max": 100,
+          "step": 5,
+          "unit": "%",
+          "default": 50
+        },
+        {
+          "type": "header",
+          "content": "Overlay"
+        },
+        {
+          "type": "color",
+          "id": "overlay_color",
+          "label": "Overlay colour",
+          "default": "#000000"
+        },
+        {
+          "type": "range",
+          "id": "overlay_opacity",
+          "label": "Overlay opacity",
+          "min": 0,
+          "max": 90,
+          "step": 5,
+          "unit": "%",
+          "default": 40
+        },
+        {
+          "type": "header",
+          "content": "Heading"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading text",
+          "default": "Leading E-Cigarette And Vaper"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            { "value": "small",  "label": "Small"       },
+            { "value": "medium", "label": "Medium"      },
+            { "value": "large",  "label": "Large"       },
+            { "value": "xlarge", "label": "Extra large" }
+          ],
+          "default": "large"
+        },
+        {
+          "type": "color",
+          "id": "heading_color",
+          "label": "Heading colour",
+          "default": "#ffffff"
+        },
+        {
+          "type": "header",
+          "content": "Subheading"
+        },
+        {
+          "type": "richtext",
+          "id": "subheading",
+          "label": "Subheading text",
+          "default": "<p>The fusion of stunning design, the best flavour and power.</p>"
+        },
+        {
+          "type": "color",
+          "id": "subheading_color",
+          "label": "Subheading colour",
+          "default": "#cccccc"
+        },
+        {
+          "type": "header",
+          "content": "Button"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "default": "Shop Now"
+        },
+        {
+          "type": "url",
+          "id": "button_url",
+          "label": "Button link"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            { "value": "outline",   "label": "Outline (transparent)" },
+            { "value": "solid",     "label": "Solid (white)"         },
+            { "value": "solid-red", "label": "Solid (accent colour)" }
+          ],
+          "default": "outline"
+        },
+        {
+          "type": "header",
+          "content": "Content Position"
+        },
+        {
+          "type": "select",
+          "id": "content_h_position",
+          "label": "Horizontal alignment",
+          "options": [
+            { "value": "left",   "label": "Left"   },
+            { "value": "center", "label": "Centre" },
+            { "value": "right",  "label": "Right"  }
+          ],
+          "default": "left"
+        },
+        {
+          "type": "select",
+          "id": "content_v_position",
+          "label": "Vertical alignment",
+          "options": [
+            { "value": "top",    "label": "Top"    },
+            { "value": "center", "label": "Centre" },
+            { "value": "bottom", "label": "Bottom" }
+          ],
+          "default": "center"
+        },
+        {
+          "type": "range",
+          "id": "content_max_width",
+          "label": "Content max-width",
+          "min": 250,
+          "max": 850,
+          "step": 25,
+          "unit": "px",
+          "default": 550
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Hero Slider",
+      "category": "Image",
+      "blocks": [
+        {
+          "type": "slide",
+          "settings": {
+            "heading":           "Leading E-Cigarette And Vaper",
+            "subheading":        "<p>The fusion of stunning design, the best flavour and power.</p>",
+            "button_label":      "Shop Now",
+            "button_style":      "outline",
+            "overlay_opacity":   40,
+            "content_h_position":"left",
+            "content_v_position":"center",
+            "heading_size":      "large"
+          }
+        },
+        {
+          "type": "slide",
+          "settings": {
+            "heading":           "Discover Premium Vapes",
+            "subheading":        "<p>Explore our curated collection of top-tier vaping devices and flavours.</p>",
+            "button_label":      "Explore Collection",
+            "button_style":      "outline",
+            "overlay_opacity":   35,
+            "content_h_position":"left",
+            "content_v_position":"center",
+            "heading_size":      "large"
+          }
+        },
+        {
+          "type": "slide",
+          "settings": {
+            "heading":           "New Arrivals This Season",
+            "subheading":        "<p>Be the first to experience the latest in vaping technology.</p>",
+            "button_label":      "View New Arrivals",
+            "button_style":      "outline",
+            "overlay_opacity":   40,
+            "content_h_position":"left",
+            "content_v_position":"center",
+            "heading_size":      "large"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

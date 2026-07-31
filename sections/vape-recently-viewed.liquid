@@ -1,0 +1,548 @@
+{%- comment -%}
+  ============================================================
+  Vape Recently Viewed Products Slider
+  sections/vape-recently-viewed.liquid
+
+  Uses the same product card design as Featured Products.
+  Reads product IDs from localStorage (viewedProducts) and
+  loads cards via Shopify search + Section Rendering API.
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign card_desktop_cols = section.settings.columns_desktop | default: 4
+  assign card_tablet_cols = section.settings.columns_tablet | default: 2
+  assign card_mobile_cols = section.settings.columns_mobile | default: 2
+  assign is_search_render = false
+  if search.performed and search.results_count > 0
+    assign is_search_render = true
+  endif
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    padding-block-start: {{ section.settings.padding_top }}px;
+    padding-block-end: {{ section.settings.padding_bottom }}px;
+    background-color: {{ section.settings.section_bg_color }};
+  }
+
+  #vrv-{{ section.id }} {
+    --vfp-cols-desktop: {{ card_desktop_cols }};
+    --vfp-cols-tablet: {{ card_tablet_cols }};
+    --vfp-cols-mobile: {{ card_mobile_cols }};
+    --vfp-gap: {{ section.settings.card_gap }}px;
+  }
+{% endstyle %}
+
+<div
+  id="vrv-{{ section.id }}"
+  class="vrv-section vfp-section page-width"
+  data-section-id="{{ section.id }}"
+  data-exclude-id="{{ product.id | default: 0 }}"
+  data-limit="{{ section.settings.products_to_show | default: 8 }}"
+  {% unless is_search_render %}hidden{% endunless %}
+>
+  <div class="vfp-header">
+    <button type="button" class="vfp-arrow vfp-arrow--prev" aria-label="Previous products" data-vrv-prev>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+
+    <h2 class="vfp-title" style="color: {{ section.settings.heading_color }};">
+      {{ section.settings.heading | escape }}
+    </h2>
+
+    <button type="button" class="vfp-arrow vfp-arrow--next" aria-label="Next products" data-vrv-next>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </button>
+  </div>
+
+  <div class="vfp-carousel-wrapper">
+    <div class="vfp-track" data-vrv-track>
+      {%- if is_search_render -%}
+        {%- assign shown = 0 -%}
+        {%- for item in search.results -%}
+          {%- if item.object_type == 'product' -%}
+            {%- unless item.id == product.id -%}
+              {% render 'vape-product-card', product: item, section_id: section.id %}
+              {%- assign shown = shown | plus: 1 -%}
+              {%- if shown >= section.settings.products_to_show -%}
+                {%- break -%}
+              {%- endif -%}
+            {%- endunless -%}
+          {%- endif -%}
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+  </div>
+</div>
+
+<style>
+  .vrv-section {
+    width: 100%;
+    max-width: var(--page-width, 1400px);
+    margin-inline: auto;
+    padding-inline: var(--vape-page-padding, clamp(1rem, 4vw, 3.5rem));
+  }
+
+  .vrv-section[hidden] {
+    display: none !important;
+  }
+
+  /* Reuse featured-product carousel/card styles when that section is not on the page */
+  .vrv-section .vfp-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .vrv-section .vfp-title {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin: 0;
+    text-align: center;
+  }
+
+  .vrv-section .vfp-arrow {
+    background: transparent;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    padding: 0.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.7;
+  }
+  .vrv-section .vfp-arrow:hover {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+
+  .vrv-section .vfp-carousel-wrapper {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .vrv-section .vfp-track {
+    display: flex;
+    gap: var(--vfp-gap, 20px);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+  }
+
+  .vrv-section .vfp-card-item {
+    flex: 0 0 calc((100% - (var(--vfp-gap) * (var(--vfp-cols-desktop) - 1))) / var(--vfp-cols-desktop));
+    max-width: calc((100% - (var(--vfp-gap) * (var(--vfp-cols-desktop) - 1))) / var(--vfp-cols-desktop));
+  }
+
+  @media (max-width: 989px) {
+    .vrv-section .vfp-card-item {
+      flex: 0 0 calc((100% - (var(--vfp-gap) * (var(--vfp-cols-tablet) - 1))) / var(--vfp-cols-tablet));
+      max-width: calc((100% - (var(--vfp-gap) * (var(--vfp-cols-tablet) - 1))) / var(--vfp-cols-tablet));
+    }
+  }
+
+  @media (max-width: 575px) {
+    .vrv-section .vfp-card-item {
+      flex: 0 0 calc((100% - (var(--vfp-gap) * (var(--vfp-cols-mobile) - 1))) / var(--vfp-cols-mobile));
+      max-width: calc((100% - (var(--vfp-gap) * (var(--vfp-cols-mobile) - 1))) / var(--vfp-cols-mobile));
+    }
+  }
+
+  .vrv-section .vfp-card {
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    border-radius: 4px;
+    padding: 1.25rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+  .vrv-section .vfp-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    border-color: #e0e0e0;
+  }
+
+  .vrv-section .vfp-card-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: #e53935;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    z-index: 2;
+  }
+
+  .vrv-section .vfp-card-image-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .vrv-section .vfp-img-primary,
+  .vrv-section .vfp-img-secondary {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+  .vrv-section .vfp-img-secondary {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+  }
+  .vrv-section .vfp-card:hover .vfp-img-primary.has-secondary { opacity: 0; }
+  .vrv-section .vfp-card:hover .vfp-img-secondary {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+
+  .vrv-section .vfp-card-actions {
+    position: absolute;
+    right: 1rem;
+    bottom: 4.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 3;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+  .vrv-section .vfp-card:hover .vfp-card-actions {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  @media (max-width: 749px) {
+    .vrv-section .vfp-card-actions {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  .vrv-section .vfp-action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f4f4f4;
+    border: none;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+  }
+  .vrv-section .vfp-action-btn:hover {
+    background: #e53935;
+    color: #fff;
+  }
+
+  .vrv-section .vfp-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: auto;
+  }
+  .vrv-section .vfp-rating {
+    color: #f5a623;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+  }
+  .vrv-section .vfp-vendor {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+  }
+  .vrv-section .vfp-vendor-name { color: #e53935; }
+  .vrv-section .vfp-product-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #111;
+    margin: 0;
+    line-height: 1.35;
+  }
+  .vrv-section .vfp-product-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+  .vrv-section .vfp-price-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+  .vrv-section .vfp-price-sale {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #e53935;
+  }
+  .vrv-section .vfp-price-compare {
+    font-size: 0.85rem;
+    color: #999;
+    text-decoration: line-through;
+  }
+</style>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'viewedProducts';
+  const root = document.getElementById('vrv-{{ section.id }}');
+  if (!root) return;
+
+  /* If this render already contains search results (Section Rendering API), just wire carousel */
+  const existingCards = root.querySelectorAll('.vfp-card-item');
+  if (existingCards.length) {
+    root.hidden = false;
+    initCarousel(root);
+    bindQuickAdd(root);
+    return;
+  }
+
+  function getViewedIds() {
+    try {
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').map(String);
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function initCarousel(sectionEl) {
+    const track = sectionEl.querySelector('[data-vrv-track]');
+    if (!track) return;
+    let index = 0;
+
+    function cols() {
+      const w = window.innerWidth;
+      if (w <= 575) return parseInt(getComputedStyle(sectionEl).getPropertyValue('--vfp-cols-mobile'), 10) || 2;
+      if (w <= 989) return parseInt(getComputedStyle(sectionEl).getPropertyValue('--vfp-cols-tablet'), 10) || 2;
+      return parseInt(getComputedStyle(sectionEl).getPropertyValue('--vfp-cols-desktop'), 10) || 4;
+    }
+
+    function maxIndex() {
+      const total = track.children.length;
+      return Math.max(0, total - cols());
+    }
+
+    function go(to) {
+      index = Math.max(0, Math.min(to, maxIndex()));
+      const gap = parseInt(getComputedStyle(sectionEl).getPropertyValue('--vfp-gap'), 10) || 20;
+      const item = track.children[0];
+      if (!item) return;
+      const step = item.getBoundingClientRect().width + gap;
+      track.style.transform = 'translateX(' + (-index * step) + 'px)';
+    }
+
+    sectionEl.querySelector('[data-vrv-prev]')?.addEventListener('click', () => go(index - 1));
+    sectionEl.querySelector('[data-vrv-next]')?.addEventListener('click', () => go(index + 1));
+    window.addEventListener('resize', () => go(index));
+  }
+
+  function bindQuickAdd(sectionEl) {
+    sectionEl.querySelectorAll('[data-quick-add-btn]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const variantId = btn.dataset.variantId;
+        if (!variantId) return;
+        fetch((window.Shopify?.routes?.root || '/') + 'cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: [{ id: parseInt(variantId, 10), quantity: 1 }] })
+        })
+          .then((r) => r.json())
+          .then(() => document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true })))
+          .catch(() => {});
+      });
+    });
+  }
+
+  async function loadRecentlyViewed() {
+    const excludeId = String(root.dataset.excludeId || '');
+    const limit = parseInt(root.dataset.limit, 10) || 8;
+    let ids = getViewedIds().filter((id) => id && id !== excludeId).slice(0, limit);
+
+    if (!ids.length) {
+      root.hidden = true;
+      return;
+    }
+
+    const sectionId = root.dataset.sectionId;
+    const query = ids.map((id) => 'id:' + id).join(' OR ');
+    const url = new URL((window.Shopify?.routes?.root || '/') + 'search', window.location.origin);
+    url.searchParams.set('q', query);
+    url.searchParams.set('type', 'product');
+    url.searchParams.set('section_id', sectionId);
+
+    try {
+      const res = await fetch(url.toString());
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const remote = doc.getElementById('vrv-' + sectionId) || doc.querySelector('.vrv-section');
+      const remoteTrack = remote && remote.querySelector('[data-vrv-track]');
+      const track = root.querySelector('[data-vrv-track]');
+
+      if (!remoteTrack || !track || !remoteTrack.children.length) {
+        root.hidden = true;
+        return;
+      }
+
+      track.innerHTML = remoteTrack.innerHTML;
+
+      /* Re-order cards to match viewed order */
+      const cardMap = {};
+      Array.from(track.querySelectorAll('.vfp-card-item')).forEach((card) => {
+        const id = card.getAttribute('data-product-id');
+        if (id) cardMap[String(id)] = card;
+      });
+
+      const ordered = document.createDocumentFragment();
+      ids.forEach((id) => {
+        if (cardMap[id]) ordered.appendChild(cardMap[id]);
+      });
+      Array.from(track.children).forEach((card) => ordered.appendChild(card));
+      track.innerHTML = '';
+      track.appendChild(ordered);
+
+      if (!track.children.length) {
+        root.hidden = true;
+        return;
+      }
+
+      root.hidden = false;
+      initCarousel(root);
+      bindQuickAdd(root);
+    } catch (err) {
+      root.hidden = true;
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadRecentlyViewed);
+  } else {
+    loadRecentlyViewed();
+  }
+
+  document.addEventListener('shopify:section:load', (e) => {
+    if (e.target.contains(root) || e.target === root.closest('.shopify-section')) {
+      loadRecentlyViewed();
+    }
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Vape Recently Viewed",
+  "tag": "section",
+  "class": "section-vape-recently-viewed",
+  "settings": [
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Recently Viewed"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading color",
+      "default": "#111111"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Max products",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Columns — Desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "columns_tablet",
+      "label": "Columns — Tablet",
+      "min": 2,
+      "max": 3,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "columns_mobile",
+      "label": "Columns — Mobile",
+      "min": 1,
+      "max": 2,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "card_gap",
+      "label": "Card gap",
+      "min": 10,
+      "max": 40,
+      "step": 5,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "color",
+      "id": "section_bg_color",
+      "label": "Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Recently Viewed",
+      "category": "Products"
+    }
+  ]
+}
+{% endschema %}

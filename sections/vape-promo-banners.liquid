@@ -1,0 +1,678 @@
+{%- comment -%}
+  ============================================================
+  Vape Promo Banners — sections/vape-promo-banners.liquid
+
+  Reference layout:
+  ┌──────────┬──────────┬──────────┐
+  │ Banner 1 │ Banner 2 │ Banner 3 │  ← 3-col top row
+  ├──────────┴──────────┴──────────┤
+  │       Wide Banner (full)       │  ← Full-width bottom row
+  └────────────────────────────────┘
+
+  Each banner:
+  • Colourful gradient background (fully configurable per block)
+  • Top-left text: small subtitle → bold CAPS heading → "Shop now →"
+  • Product image: sits in the bottom half / right side (wide)
+  • Hover: subtle lift + image scale
+  • All text, links, images, colours → Theme Customizer
+  ============================================================
+{%- endcomment -%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    padding-block-start: {{ section.settings.padding_top }}px;
+    padding-block-end: {{ section.settings.padding_bottom }}px;
+    background: {{ section.settings.section_bg }};
+  }
+
+  #vpb-{{ section.id }} {
+    --vpb-gap: {{ section.settings.gap }}px;
+    --vpb-radius: {{ section.settings.card_radius }}px;
+  }
+{% endstyle %}
+
+<div id="vpb-{{ section.id }}" class="vpb-section page-width">
+
+  {%- comment -%} Separate top-row banners from wide banners {%- endcomment -%}
+  {%- liquid
+    assign top_blocks = '' | split: ','
+    assign wide_blocks = '' | split: ','
+    for block in section.blocks
+      if block.type == 'banner_wide'
+        assign wide_blocks = wide_blocks | concat: block
+      else
+        assign top_blocks = top_blocks | concat: block
+      endif
+    endfor
+  -%}
+
+  {%- comment -%} ── TOP ROW: 3-column grid ── {%- endcomment -%}
+  {%- if top_blocks.size > 0 -%}
+    <div class="vpb-grid-top">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'banner' -%}
+          {%- liquid
+            assign g_start = block.settings.bg_color_start
+            assign g_end = block.settings.bg_color_end
+            assign g_angle = block.settings.gradient_angle
+            assign card_link = block.settings.cta_url | default: '#'
+          -%}
+          <a
+            class="vpb-card vpb-card--top"
+            href="{{ card_link }}"
+            style="background: linear-gradient({{ g_angle }}deg, {{ g_start }}, {{ g_end }});"
+            aria-label="{{ block.settings.heading | default: 'Browse category' | escape }}"
+            {{ block.shopify_attributes }}
+          >
+            {%- comment -%} Text block — top-left ── {%- endcomment -%}
+            <div class="vpb-text">
+              {%- if block.settings.subtitle != blank -%}
+                <p class="vpb-subtitle">{{ block.settings.subtitle | escape }}</p>
+              {%- endif -%}
+              <h3 class="vpb-heading vpb-heading--{{ block.settings.heading_size }}">
+                {{ block.settings.heading | default: 'Category Name' | escape }}
+              </h3>
+              {%- if block.settings.cta_text != blank -%}
+                <span class="vpb-cta">{{ block.settings.cta_text | escape }} →</span>
+              {%- endif -%}
+            </div>
+
+            {%- comment -%} Product image — bottom centred ── {%- endcomment -%}
+            <div class="vpb-img-wrap vpb-img-wrap--bottom">
+              {%- if block.settings.image != blank -%}
+                {{ block.settings.image | image_url: width: 600 | image_tag:
+                  loading: 'lazy',
+                  class: 'vpb-img',
+                  widths: '300, 450, 600',
+                  alt: block.settings.image.alt | default: block.settings.heading | escape
+                }}
+              {%- else -%}
+                {{ 'product-2' | placeholder_svg_tag: 'vpb-placeholder-svg' }}
+              {%- endif -%}
+            </div>
+          </a>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── BOTTOM ROW: Full-width wide banner ── {%- endcomment -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'banner_wide' -%}
+      {%- liquid
+        assign g_start = block.settings.bg_color_start
+        assign g_end = block.settings.bg_color_end
+        assign g_angle = block.settings.gradient_angle
+        assign card_link = block.settings.cta_url | default: '#'
+      -%}
+      <a
+        class="vpb-card vpb-card--wide"
+        href="{{ card_link }}"
+        style="background: linear-gradient({{ g_angle }}deg, {{ g_start }}, {{ g_end }});"
+        aria-label="{{ block.settings.heading | default: 'Browse all' | escape }}"
+        {{ block.shopify_attributes }}
+      >
+        {%- comment -%} Text — left column ── {%- endcomment -%}
+        <div class="vpb-text vpb-text--wide">
+          {%- if block.settings.subtitle != blank -%}
+            <p class="vpb-subtitle">{{ block.settings.subtitle | escape }}</p>
+          {%- endif -%}
+          <h3 class="vpb-heading vpb-heading--{{ block.settings.heading_size }}">
+            {{ block.settings.heading | default: 'Explore Our World' | escape }}
+          </h3>
+          {%- if block.settings.cta_text != blank -%}
+            <span class="vpb-cta">{{ block.settings.cta_text | escape }} →</span>
+          {%- endif -%}
+        </div>
+
+        {%- comment -%} Product image — right column ── {%- endcomment -%}
+        <div class="vpb-img-wrap vpb-img-wrap--right">
+          {%- if block.settings.image != blank -%}
+            {{ block.settings.image | image_url: width: 800 | image_tag:
+              loading: 'lazy',
+              class: 'vpb-img vpb-img--wide',
+              widths: '400, 600, 800',
+              alt: block.settings.image.alt | default: block.settings.heading | escape
+            }}
+          {%- else -%}
+            {{ 'product-1' | placeholder_svg_tag: 'vpb-placeholder-svg vpb-placeholder-svg--wide' }}
+          {%- endif -%}
+        </div>
+      </a>
+    {%- endif -%}
+  {%- endfor -%}
+
+</div>
+
+<style>
+  /* ============================================================
+     VAPE PROMO BANNERS (vpb)
+     Prefix: .vpb
+  ============================================================ */
+
+  .vpb-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--vpb-gap, 16px);
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  /* ── Top 3-column grid ── */
+  .vpb-grid-top {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--vpb-gap, 16px);
+  }
+
+  /* ── Base card styles ── */
+  .vpb-card {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--vpb-radius, 8px);
+    overflow: hidden;
+    text-decoration: none;
+    position: relative;
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .vpb-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.18);
+  }
+
+  /* ── TOP ROW CARDS ── */
+  .vpb-card--top {
+    padding: 1.75rem 1.5rem 0;
+    min-height: 320px;
+  }
+
+  /* ── WIDE BOTTOM CARD ── */
+  .vpb-card--wide {
+    flex-direction: row;
+    align-items: flex-end;
+    min-height: 260px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  /* ── Text block (top-left in regular cards) ── */
+  .vpb-text {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    z-index: 2;
+    flex-shrink: 0;
+  }
+
+  /* Text block in wide card: sits on the LEFT, padded */
+  .vpb-text--wide {
+    padding: 2.5rem 2rem 2.5rem 2.5rem;
+    flex: 0 0 45%;
+    max-width: 520px;
+    align-self: center;
+  }
+
+  /* ── Subtitle text ── */
+  .vpb-subtitle {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: 0.75rem;
+    font-weight: 400;
+    color: rgba(255, 255, 255, 0.88);
+    margin: 0;
+    letter-spacing: 0.02em;
+    font-style: italic;
+  }
+
+  /* ── Main heading ── */
+  .vpb-heading {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-weight: 900;
+    text-transform: uppercase;
+    color: #ffffff;
+    margin: 0;
+    letter-spacing: 0.03em;
+    line-height: 1.1;
+  }
+
+  .vpb-heading--small  { font-size: clamp(1.25rem, 2.5vw, 1.5rem); }
+  .vpb-heading--medium { font-size: clamp(1.5rem,  3vw,   2rem);   }
+  .vpb-heading--large  { font-size: clamp(1.75rem, 3.5vw, 2.5rem); }
+  .vpb-heading--xlarge { font-size: clamp(2rem,    4vw,   3rem);   }
+
+  /* ── CTA text ── */
+  .vpb-cta {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.9);
+    letter-spacing: 0.01em;
+    transition: letter-spacing 0.25s ease;
+    display: inline-block;
+    margin-top: 0.25rem;
+  }
+
+  .vpb-card:hover .vpb-cta {
+    letter-spacing: 0.06em;
+    color: #ffffff;
+  }
+
+  /* ── Image containers ── */
+  .vpb-img-wrap {
+    flex: 1;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Bottom-centred image (regular card) */
+  .vpb-img-wrap--bottom {
+    margin-top: 1rem;
+    align-items: flex-end;
+    justify-content: center;
+    /* Allow image to appear to rest at the bottom edge */
+  }
+
+  /* Right-side image (wide card) */
+  .vpb-img-wrap--right {
+    flex: 1;
+    align-items: flex-end;
+    justify-content: flex-end;
+    overflow: visible;
+    padding-right: 2rem;
+  }
+
+  /* Product images */
+  .vpb-img {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 230px;
+    object-fit: contain;
+    object-position: center bottom;
+    transform: scale(1);
+    transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+    filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.2));
+  }
+
+  .vpb-card:hover .vpb-img {
+    transform: scale(1.07) translateY(-6px);
+  }
+
+  /* Wide card image — taller allowance */
+  .vpb-img--wide {
+    max-height: 300px;
+    max-width: 520px;
+    width: auto;
+  }
+
+  /* Placeholder SVG */
+  .vpb-placeholder-svg {
+    width: 70%;
+    height: auto;
+    max-height: 180px;
+    opacity: 0.3;
+    align-self: center;
+  }
+
+  .vpb-placeholder-svg--wide {
+    max-height: 240px;
+    max-width: 420px;
+    opacity: 0.3;
+  }
+
+  /* ─────────────────────────────────
+     TABLET (max 2 cols top)
+  ───────────────────────────────── */
+  @media (max-width: 989px) {
+    .vpb-grid-top {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .vpb-card--top {
+      min-height: 280px;
+    }
+
+    .vpb-card--wide {
+      min-height: 220px;
+    }
+
+    .vpb-text--wide {
+      flex: 0 0 50%;
+      padding: 2rem 1.5rem 2rem 2rem;
+    }
+
+    .vpb-img--wide {
+      max-height: 220px;
+    }
+  }
+
+  /* ─────────────────────────────────
+     MOBILE (single column stack)
+  ───────────────────────────────── */
+  @media (max-width: 639px) {
+    .vpb-grid-top {
+      grid-template-columns: 1fr;
+    }
+
+    .vpb-card--top {
+      min-height: 260px;
+      padding: 1.5rem 1.25rem 0;
+    }
+
+    /* Wide card goes column on mobile */
+    .vpb-card--wide {
+      flex-direction: column;
+      align-items: flex-start;
+      min-height: auto;
+      padding-bottom: 0;
+    }
+
+    .vpb-text--wide {
+      flex: none;
+      width: 100%;
+      padding: 2rem 1.5rem 1rem;
+    }
+
+    .vpb-img-wrap--right {
+      width: 100%;
+      justify-content: center;
+      padding-right: 0;
+      padding-bottom: 0;
+    }
+
+    .vpb-img--wide {
+      max-height: 220px;
+      max-width: 100%;
+    }
+  }
+</style>
+
+{% schema %}
+{
+  "name": "Vape Promo Banners",
+  "class": "section-vape-promo-banners",
+  "tag": "section",
+  "max_blocks": 8,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "gap",
+      "label": "Gap between banners",
+      "min": 4,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "range",
+      "id": "card_radius",
+      "label": "Card corner radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Section Background & Spacing"
+    },
+    {
+      "type": "color",
+      "id": "section_bg",
+      "label": "Section background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    }
+  ],
+  "blocks": [
+    {
+      "type": "banner",
+      "name": "Top Banner Card",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Text Content"
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle (small text above heading)",
+          "default": "Your favourite saltnic brands"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "PREMIUM E-LIQUID"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            { "value": "small",  "label": "Small"        },
+            { "value": "medium", "label": "Medium"       },
+            { "value": "large",  "label": "Large"        },
+            { "value": "xlarge", "label": "Extra Large"  }
+          ],
+          "default": "large"
+        },
+        {
+          "type": "text",
+          "id": "cta_text",
+          "label": "CTA link text",
+          "default": "Shop now"
+        },
+        {
+          "type": "url",
+          "id": "cta_url",
+          "label": "CTA link URL"
+        },
+        {
+          "type": "header",
+          "content": "Product Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Product image",
+          "info": "Use a PNG with transparent background. Image sits in the bottom centre of the card."
+        },
+        {
+          "type": "header",
+          "content": "Card Background Gradient"
+        },
+        {
+          "type": "color",
+          "id": "bg_color_start",
+          "label": "Gradient start colour",
+          "default": "#00b09b"
+        },
+        {
+          "type": "color",
+          "id": "bg_color_end",
+          "label": "Gradient end colour",
+          "default": "#f6a000"
+        },
+        {
+          "type": "select",
+          "id": "gradient_angle",
+          "label": "Gradient direction",
+          "options": [
+            { "value": "0",   "label": "Top → Bottom"             },
+            { "value": "45",  "label": "Top-left → Bottom-right"  },
+            { "value": "90",  "label": "Left → Right"             },
+            { "value": "135", "label": "Top-right → Bottom-left"  },
+            { "value": "180", "label": "Bottom → Top"             }
+          ],
+          "default": "135"
+        }
+      ]
+    },
+    {
+      "type": "banner_wide",
+      "name": "Wide Bottom Banner",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Text Content"
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle (small text above heading)",
+          "default": "Your favourite saltnic brands"
+        },
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "EXPLORING THE WORLD OF FLAVOR AND FREEDOM"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            { "value": "small",  "label": "Small"        },
+            { "value": "medium", "label": "Medium"       },
+            { "value": "large",  "label": "Large"        },
+            { "value": "xlarge", "label": "Extra Large"  }
+          ],
+          "default": "large"
+        },
+        {
+          "type": "text",
+          "id": "cta_text",
+          "label": "CTA link text",
+          "default": "Shop now"
+        },
+        {
+          "type": "url",
+          "id": "cta_url",
+          "label": "CTA link URL"
+        },
+        {
+          "type": "header",
+          "content": "Product Image (right side)"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Product image",
+          "info": "Use a PNG with transparent background. Image sits on the right side of the wide banner."
+        },
+        {
+          "type": "header",
+          "content": "Card Background Gradient"
+        },
+        {
+          "type": "color",
+          "id": "bg_color_start",
+          "label": "Gradient start colour",
+          "default": "#f6a000"
+        },
+        {
+          "type": "color",
+          "id": "bg_color_end",
+          "label": "Gradient end colour",
+          "default": "#f39c12"
+        },
+        {
+          "type": "select",
+          "id": "gradient_angle",
+          "label": "Gradient direction",
+          "options": [
+            { "value": "0",   "label": "Top → Bottom"             },
+            { "value": "45",  "label": "Top-left → Bottom-right"  },
+            { "value": "90",  "label": "Left → Right"             },
+            { "value": "135", "label": "Top-right → Bottom-left"  },
+            { "value": "180", "label": "Bottom → Top"             }
+          ],
+          "default": "90"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Promo Banners",
+      "category": "Promotional",
+      "blocks": [
+        {
+          "type": "banner",
+          "settings": {
+            "subtitle": "Your favourite saltnic brands",
+            "heading": "PREMIUM E-LIQUID",
+            "cta_text": "Shop now",
+            "bg_color_start": "#00b09b",
+            "bg_color_end": "#f6a000",
+            "gradient_angle": "135"
+          }
+        },
+        {
+          "type": "banner",
+          "settings": {
+            "subtitle": "Ultra compact vaping devices known",
+            "heading": "VAPE & POD MOD",
+            "cta_text": "Shop now",
+            "bg_color_start": "#f953c6",
+            "bg_color_end": "#00c9ff",
+            "gradient_angle": "135"
+          }
+        },
+        {
+          "type": "banner",
+          "settings": {
+            "subtitle": "Your favourite at the click of a button",
+            "heading": "TANKS & COILS",
+            "cta_text": "Shop now",
+            "bg_color_start": "#ff4e50",
+            "bg_color_end": "#f9d423",
+            "gradient_angle": "135"
+          }
+        },
+        {
+          "type": "banner_wide",
+          "settings": {
+            "subtitle": "Your favourite saltnic brands",
+            "heading": "EXPLORING THE WORLD OF FLAVOR AND FREEDOM",
+            "cta_text": "Shop now",
+            "bg_color_start": "#f6a000",
+            "bg_color_end": "#f39c12",
+            "gradient_angle": "90"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,1421 @@
+{%- comment -%}
+  ============================================================
+  Vape Mega Menu Header — sections/vape-mega-header.liquid
+
+  Architecture:
+  ┌──────────────────────────────────────────────────────────┐
+  │  LOGO (left)  │  NAV (center)  │  ICONS (right)         │
+  └──────────────────────────────────────────────────────────┘
+
+  Mega Menu layout (on hover):
+  ┌──────────────────────────────────────────────────────────┐
+  │  FEATURED LINKS │ COL 1 HEADING │ COL 2 HEADING │ COL 3 │
+  │  Best Sellers   │ Link 1        │ Link 1        │ Link 1 │
+  │  New Arrival    │ Link 2        │ Link 2        │ Link 2 │
+  │  Top Trending   │ Link 3        │ Link 3        │ Link 3 │
+  └──────────────────────────────────────────────────────────┘
+
+  How to configure mega menus:
+  1. Customizer → this section → "Add block" → "Mega Menu"
+  2. Set "Nav item title" to EXACTLY match a nav link label
+  3. Fill in featured links + column headings + column menus
+  4. Create separate Shopify navigation menus for each column
+
+  Mobile: Hamburger → slide-out drawer with accordion sub-menus
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign main_menu    = linklists[section.settings.main_menu]
+  assign cart_count   = cart.item_count
+  assign show_account = section.settings.show_account
+  assign show_search  = section.settings.show_search
+  assign show_wish    = section.settings.show_wishlist
+-%}
+
+{% style %}
+  #vmh-{{ section.id }} {
+    --vmh-bg:           {{ section.settings.header_bg }};
+    --vmh-text:         {{ section.settings.header_text_color }};
+    --vmh-accent:       {{ section.settings.accent_color }};
+    --vmh-height:       {{ section.settings.header_height }}px;
+    --vmh-logo-h:       {{ section.settings.logo_height }}px;
+    --vmh-mega-bg:      {{ section.settings.mega_bg }};
+    --vmh-mega-text:    {{ section.settings.mega_text_color }};
+    --vmh-mega-head:    {{ section.settings.mega_heading_color }};
+    --vmh-mega-feat:    {{ section.settings.mega_featured_color }};
+    --vmh-border:       {{ section.settings.header_border_color }};
+    --vmh-font-size:    {{ section.settings.nav_font_size }}px;
+  }
+
+  body { padding-top: {{ section.settings.header_height }}px; }
+{% endstyle %}
+
+{%- comment -%} ═══════════════════════════════════════════════
+    HEADER ELEMENT
+═══════════════════════════════════════════════ {%- endcomment -%}
+<header
+  id="vmh-{{ section.id }}"
+  class="vmh{% if section.settings.sticky %} vmh--sticky{% endif %}"
+  role="banner"
+>
+  <div class="vmh-inner page-width">
+
+    {%- comment -%} ── LOGO ── {%- endcomment -%}
+    <div class="vmh-logo">
+      <a href="{{ routes.root_url }}" class="vmh-logo-link" aria-label="{{ shop.name }}">
+        {%- if section.settings.logo != blank -%}
+          {{ section.settings.logo
+            | image_url: height: section.settings.logo_height
+            | image_tag:
+              loading: 'eager',
+              class: 'vmh-logo-img',
+              height: section.settings.logo_height,
+              alt: shop.name | escape
+          }}
+        {%- else -%}
+          <span class="vmh-logo-text">{{ shop.name | escape }}</span>
+        {%- endif -%}
+      </a>
+    </div>
+
+    {%- comment -%} ── DESKTOP NAVIGATION ── {%- endcomment -%}
+    <nav class="vmh-nav" aria-label="Main navigation">
+      <ul class="vmh-nav-list" role="list">
+        {%- for link in main_menu.links -%}
+          {%- liquid
+            assign is_active = false
+            if link.active or link.child_active
+              assign is_active = true
+            endif
+
+            assign mega_block = null
+            for block in section.blocks
+              if block.type == 'mega_menu'
+                assign blk_title = block.settings.nav_item_title | strip | downcase
+                assign lnk_title = link.title | strip | downcase
+                if blk_title == lnk_title
+                  assign mega_block = block
+                endif
+              endif
+            endfor
+
+            assign has_mega     = false
+            assign has_dropdown = false
+            if mega_block != null
+              assign has_mega = true
+            elsif link.links.size > 0
+              assign has_dropdown = true
+            endif
+          -%}
+
+          <li
+            class="vmh-nav-item{% if has_mega %} vmh-nav-item--mega{% endif %}{% if has_dropdown %} vmh-nav-item--dropdown{% endif %}{% if is_active %} vmh-nav-item--active{% endif %}"
+            {%- if has_mega or has_dropdown -%}
+              data-has-submenu
+            {%- endif -%}
+          >
+            <a
+              href="{{ link.url }}"
+              class="vmh-nav-link{% if is_active %} vmh-nav-link--active{% endif %}"
+              {%- if has_mega or has_dropdown -%}
+                aria-haspopup="true"
+                aria-expanded="false"
+              {%- endif -%}
+              {%- if link.current -%}aria-current="page"{%- endif -%}
+            >
+              {{ link.title | escape }}
+              {%- if has_mega or has_dropdown -%}
+                <svg class="vmh-chevron" viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                  <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              {%- endif -%}
+            </a>
+
+            {%- comment -%} ── MEGA MENU (block-powered) ── {%- endcomment -%}
+            {%- if has_mega -%}
+              <div class="vmh-mega" role="region" aria-label="{{ link.title | escape }} mega menu">
+                <div class="vmh-mega-inner page-width">
+
+                  {%- comment -%} Featured bold links column ── {%- endcomment -%}
+                  {%- liquid
+                    assign has_feat = false
+                    assign feat_slots = '1,2,3,4,5' | split: ','
+                    for slot in feat_slots
+                      assign feat_label_key = 'feat_' | append: slot | append: '_label'
+                      assign feat_label_val = mega_block.settings[feat_label_key]
+                      if feat_label_val != blank
+                        assign has_feat = true
+                        break
+                      endif
+                    endfor
+                  -%}
+                  {%- if has_feat -%}
+                    <div class="vmh-mega-col vmh-mega-col--featured">
+                      {%- for slot in feat_slots -%}
+                        {%- assign feat_label_key = 'feat_' | append: slot | append: '_label' -%}
+                        {%- assign feat_url_key   = 'feat_' | append: slot | append: '_url'   -%}
+                        {%- assign feat_label_val = mega_block.settings[feat_label_key] -%}
+                        {%- assign feat_url_val   = mega_block.settings[feat_url_key] | default: '#' -%}
+                        {%- if feat_label_val != blank -%}
+                          <a href="{{ feat_url_val }}" class="vmh-mega-feat-link">
+                            {{ feat_label_val | escape }}
+                          </a>
+                        {%- endif -%}
+                      {%- endfor -%}
+                    </div>
+                  {%- endif -%}
+
+                  {%- comment -%} Regular columns (1-4) ── {%- endcomment -%}
+                  {%- assign col_nums = '1,2,3,4' | split: ',' -%}
+                  {%- for col_num in col_nums -%}
+                    {%- liquid
+                      assign col_heading_key = 'col_' | append: col_num | append: '_heading'
+                      assign col_menu_key    = 'col_' | append: col_num | append: '_menu'
+                      assign col_heading_val = mega_block.settings[col_heading_key]
+                      assign col_menu_val    = mega_block.settings[col_menu_key]
+                      assign col_menu_obj    = linklists[col_menu_val]
+                    -%}
+                    {%- if col_heading_val != blank or col_menu_obj.links.size > 0 -%}
+                      <div class="vmh-mega-col">
+                        {%- if col_heading_val != blank -%}
+                          <p class="vmh-mega-col-heading">{{ col_heading_val | escape }}</p>
+                        {%- endif -%}
+                        {%- if col_menu_obj.links.size > 0 -%}
+                          <ul class="vmh-mega-col-links" role="list">
+                            {%- for sub in col_menu_obj.links -%}
+                              <li>
+                                <a
+                                  href="{{ sub.url }}"
+                                  class="vmh-mega-link{% if sub.active %} vmh-mega-link--active{% endif %}"
+                                >
+                                  {{ sub.title | escape }}
+                                </a>
+                              </li>
+                            {%- endfor -%}
+                          </ul>
+                        {%- endif -%}
+                      </div>
+                    {%- endif -%}
+                  {%- endfor -%}
+
+                </div>
+              </div>
+            {%- endif -%}
+
+            {%- comment -%} ── SIMPLE DROPDOWN (sub-links from nav) ── {%- endcomment -%}
+            {%- if has_dropdown -%}
+              <ul class="vmh-dropdown" role="list">
+                {%- for sub in link.links -%}
+                  <li class="vmh-dropdown-item">
+                    <a
+                      href="{{ sub.url }}"
+                      class="vmh-dropdown-link{% if sub.active %} vmh-dropdown-link--active{% endif %}"
+                    >{{ sub.title | escape }}</a>
+                    {%- if sub.links.size > 0 -%}
+                      <ul class="vmh-dropdown vmh-dropdown--nested" role="list">
+                        {%- for deep in sub.links -%}
+                          <li>
+                            <a href="{{ deep.url }}" class="vmh-dropdown-link">{{ deep.title | escape }}</a>
+                          </li>
+                        {%- endfor -%}
+                      </ul>
+                    {%- endif -%}
+                  </li>
+                {%- endfor -%}
+              </ul>
+            {%- endif -%}
+
+          </li>
+        {%- endfor -%}
+      </ul>
+    </nav>
+
+    {%- comment -%} ── HEADER ICONS (right) ── {%- endcomment -%}
+    <div class="vmh-icons">
+
+      {%- if show_search -%}
+        <button class="vmh-icon-btn" id="vmh-search-toggle" aria-label="Search" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </button>
+      {%- endif -%}
+
+      {%- if show_account -%}
+        <a
+          class="vmh-icon-btn"
+          href="{{ routes.account_url }}"
+          aria-label="{% if customer %}My Account{% else %}Log in{% endif %}"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </a>
+      {%- endif -%}
+
+      {%- if show_wish -%}
+        <a class="vmh-icon-btn" href="{{ section.settings.wishlist_url | default: '/pages/wishlist' }}" aria-label="Wishlist">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+          </svg>
+        </a>
+      {%- endif -%}
+
+      <a
+        class="vmh-icon-btn vmh-cart-btn"
+        href="{{ routes.cart_url }}"
+        aria-label="Cart ({{ cart_count }} items)"
+        id="vmh-cart-link"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/>
+        </svg>
+        {%- if cart_count > 0 -%}
+          <span class="vmh-cart-count" aria-hidden="true">{{ cart_count }}</span>
+        {%- endif -%}
+      </a>
+
+      {%- comment -%} Mobile hamburger ── {%- endcomment -%}
+      <button
+        class="vmh-hamburger"
+        id="vmh-hamburger"
+        aria-label="Open menu"
+        aria-expanded="false"
+        aria-controls="vmh-drawer-{{ section.id }}"
+      >
+        <span class="vmh-hamburger-bar"></span>
+        <span class="vmh-hamburger-bar"></span>
+        <span class="vmh-hamburger-bar"></span>
+      </button>
+
+    </div>
+  </div>
+
+  {%- comment -%} ── SEARCH BAR (slides down) ── {%- endcomment -%}
+  {%- if show_search -%}
+    <div class="vmh-search-bar" id="vmh-search-bar" aria-hidden="true">
+      <div class="vmh-search-inner page-width">
+        <form action="{{ routes.search_url }}" method="get" role="search">
+          <input
+            type="search"
+            name="q"
+            placeholder="{{ section.settings.search_placeholder | default: 'Search products…' | escape }}"
+            class="vmh-search-input"
+            autocomplete="off"
+            aria-label="Search"
+          >
+          <button type="submit" class="vmh-search-submit" aria-label="Submit search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </button>
+        </form>
+        <button class="vmh-search-close" id="vmh-search-close" aria-label="Close search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  {%- endif -%}
+</header>
+
+{%- comment -%} ═══════════════════════════════════════════════
+    MOBILE DRAWER
+═══════════════════════════════════════════════ {%- endcomment -%}
+<div
+  id="vmh-drawer-{{ section.id }}"
+  class="vmh-drawer"
+  aria-label="Mobile navigation"
+  aria-hidden="true"
+>
+  <div class="vmh-drawer-header">
+    {%- if section.settings.logo != blank -%}
+      <a href="{{ routes.root_url }}" class="vmh-logo-link">
+        {{ section.settings.logo | image_url: height: 36 | image_tag: loading: 'eager', class: 'vmh-logo-img', alt: shop.name | escape }}
+      </a>
+    {%- else -%}
+      <span class="vmh-logo-text">{{ shop.name | escape }}</span>
+    {%- endif -%}
+    <button class="vmh-drawer-close" id="vmh-drawer-close-{{ section.id }}" aria-label="Close menu">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <nav class="vmh-drawer-nav">
+    <ul class="vmh-drawer-list" role="list">
+      {%- for link in main_menu.links -%}
+        {%- liquid
+          assign mega_block_m = null
+          for block in section.blocks
+            if block.type == 'mega_menu'
+              assign blk_title_m = block.settings.nav_item_title | strip | downcase
+              assign lnk_title_m = link.title | strip | downcase
+              if blk_title_m == lnk_title_m
+                assign mega_block_m = block
+              endif
+            endif
+          endfor
+
+          assign has_sub_m = false
+          if mega_block_m != null or link.links.size > 0
+            assign has_sub_m = true
+          endif
+        -%}
+        <li class="vmh-drawer-item{% if has_sub_m %} vmh-drawer-item--has-sub{% endif %}">
+          <div class="vmh-drawer-link-row">
+            <a href="{{ link.url }}" class="vmh-drawer-link">{{ link.title | escape }}</a>
+            {%- if has_sub_m -%}
+              <button class="vmh-drawer-toggle" aria-label="Expand {{ link.title | escape }}" aria-expanded="false">
+                <svg viewBox="0 0 10 6" fill="none" aria-hidden="true">
+                  <path d="M1 1l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </button>
+            {%- endif -%}
+          </div>
+
+          {%- if has_sub_m -%}
+            <ul class="vmh-drawer-sub" role="list" hidden>
+              {%- comment -%} Featured links from mega block ── {%- endcomment -%}
+              {%- if mega_block_m != null -%}
+                {%- assign feat_slots_m = '1,2,3,4,5' | split: ',' -%}
+                {%- for slot_m in feat_slots_m -%}
+                  {%- assign fl_key = 'feat_' | append: slot_m | append: '_label' -%}
+                  {%- assign fu_key = 'feat_' | append: slot_m | append: '_url' -%}
+                  {%- assign fl_val = mega_block_m.settings[fl_key] -%}
+                  {%- assign fu_val = mega_block_m.settings[fu_key] | default: '#' -%}
+                  {%- if fl_val != blank -%}
+                    <li><a href="{{ fu_val }}" class="vmh-drawer-sub-link vmh-drawer-sub-link--bold">{{ fl_val | escape }}</a></li>
+                  {%- endif -%}
+                {%- endfor -%}
+                {%- comment -%} Column links ── {%- endcomment -%}
+                {%- assign col_nums_m = '1,2,3,4' | split: ',' -%}
+                {%- for col_m in col_nums_m -%}
+                  {%- assign cm_key = 'col_' | append: col_m | append: '_menu' -%}
+                  {%- assign cm_val = mega_block_m.settings[cm_key] -%}
+                  {%- assign cm_obj = linklists[cm_val] -%}
+                  {%- for sub_m in cm_obj.links -%}
+                    <li><a href="{{ sub_m.url }}" class="vmh-drawer-sub-link">{{ sub_m.title | escape }}</a></li>
+                  {%- endfor -%}
+                {%- endfor -%}
+              {%- else -%}
+                {%- for sub in link.links -%}
+                  <li><a href="{{ sub.url }}" class="vmh-drawer-sub-link">{{ sub.title | escape }}</a></li>
+                {%- endfor -%}
+              {%- endif -%}
+            </ul>
+          {%- endif -%}
+        </li>
+      {%- endfor -%}
+    </ul>
+  </nav>
+
+  <div class="vmh-drawer-footer">
+    <a href="{{ routes.account_url }}" class="vmh-drawer-footer-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" aria-hidden="true">
+        <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/>
+      </svg>
+      {% if customer %}My Account{% else %}Log in{% endif %}
+    </a>
+    <a href="{{ routes.cart_url }}" class="vmh-drawer-footer-link">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="18" aria-hidden="true">
+        <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/>
+      </svg>
+      Cart ({{ cart_count }})
+    </a>
+  </div>
+</div>
+
+{%- comment -%} Overlay backdrop {%- endcomment -%}
+<div class="vmh-overlay" id="vmh-overlay-{{ section.id }}" aria-hidden="true"></div>
+
+<style>
+  /* ============================================================
+     VAPE MEGA HEADER (vmh)
+  ============================================================ */
+
+  /* ── Reset / base ── */
+  .vmh *, .vmh *::before, .vmh *::after { box-sizing: border-box; }
+  .vmh { margin: 0; padding: 0; }
+
+  /* ── Header shell ── */
+  .vmh {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 900;
+    height: var(--vmh-height, 72px);
+    background: var(--vmh-bg, #0a0a0a);
+    border-bottom: 1px solid var(--vmh-border, rgba(255,255,255,0.08));
+    transition: box-shadow 0.3s ease, background 0.3s ease;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .vmh.is-scrolled {
+    box-shadow: 0 2px 24px rgba(0,0,0,0.4);
+  }
+
+  /* ── Inner row ── */
+  .vmh-inner {
+    display: flex;
+    align-items: center;
+    height: var(--vmh-height, 72px);
+    gap: 1.5rem;
+  }
+
+  /* ── LOGO ── */
+  .vmh-logo {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+  }
+
+  .vmh-logo-link {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    transition: opacity 0.2s;
+  }
+
+  .vmh-logo-link:hover { opacity: 0.85; }
+
+  .vmh-logo-img {
+    height: var(--vmh-logo-h, 40px);
+    width: auto;
+    display: block;
+  }
+
+  .vmh-logo-text {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: var(--vmh-text, #fff);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ── DESKTOP NAV ── */
+  .vmh-nav {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .vmh-nav-list {
+    display: flex;
+    align-items: center;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    gap: 0;
+    height: var(--vmh-height, 72px);
+  }
+
+  .vmh-nav-item {
+    position: static; /* mega menu is full-width */
+    display: flex;
+    align-items: center;
+    height: 100%;
+  }
+
+  .vmh-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    height: 100%;
+    padding: 0 1.1rem;
+    font-size: var(--vmh-font-size, 14px);
+    font-weight: 500;
+    color: var(--vmh-text, #ffffff);
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    white-space: nowrap;
+    position: relative;
+    transition: color 0.2s ease;
+  }
+
+  /* Underline indicator */
+  .vmh-nav-link::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 1.1rem;
+    right: 1.1rem;
+    height: 2px;
+    background: var(--vmh-accent, #e53935);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform 0.25s ease;
+  }
+
+  .vmh-nav-item:hover > .vmh-nav-link,
+  .vmh-nav-link--active {
+    color: var(--vmh-accent, #e53935);
+  }
+
+  .vmh-nav-link--active::after,
+  .vmh-nav-item:hover > .vmh-nav-link::after {
+    transform: scaleX(1);
+  }
+
+  /* Chevron */
+  .vmh-chevron {
+    width: 10px;
+    height: 6px;
+    flex-shrink: 0;
+    transition: transform 0.25s ease;
+  }
+
+  .vmh-nav-item:hover > .vmh-nav-link .vmh-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* ── SIMPLE DROPDOWN ── */
+  .vmh-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(var(--vmh-height, 72px) - 2px);
+    left: 0;
+    min-width: 220px;
+    background: var(--vmh-mega-bg, #ffffff);
+    border-top: 3px solid var(--vmh-accent, #e53935);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+    list-style: none;
+    margin: 0;
+    padding: 0.75rem 0;
+    z-index: 200;
+    animation: vmhFadeIn 0.2s ease;
+  }
+
+  .vmh-nav-item--dropdown { position: relative; }
+
+  .vmh-nav-item--dropdown:hover > .vmh-dropdown,
+  .vmh-dropdown:hover {
+    display: block;
+  }
+
+  .vmh-dropdown-item { position: relative; }
+
+  .vmh-dropdown-link {
+    display: block;
+    padding: 0.55rem 1.25rem;
+    font-size: 0.875rem;
+    color: var(--vmh-mega-text, #333);
+    text-decoration: none;
+    white-space: nowrap;
+    transition: color 0.15s, padding-left 0.15s;
+  }
+
+  .vmh-dropdown-link:hover,
+  .vmh-dropdown-link--active {
+    color: var(--vmh-accent, #e53935);
+    padding-left: 1.5rem;
+  }
+
+  /* Nested dropdown */
+  .vmh-dropdown--nested {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 100%;
+    min-width: 200px;
+    background: var(--vmh-mega-bg, #ffffff);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    border-top: 3px solid var(--vmh-accent, #e53935);
+    padding: 0.75rem 0;
+  }
+
+  .vmh-dropdown-item:hover > .vmh-dropdown--nested {
+    display: block;
+  }
+
+  /* ── MEGA MENU ── */
+  .vmh-mega {
+    display: none;
+    position: fixed;
+    top: var(--vmh-height, 72px);
+    left: 0;
+    right: 0;
+    background: var(--vmh-mega-bg, #ffffff);
+    border-top: 3px solid var(--vmh-accent, #e53935);
+    box-shadow: 0 16px 48px rgba(0,0,0,0.18);
+    z-index: 200;
+    animation: vmhFadeSlide 0.22s ease;
+  }
+
+  .vmh-nav-item--mega:hover > .vmh-mega,
+  .vmh-mega:hover {
+    display: block;
+  }
+
+  @keyframes vmhFadeSlide {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes vmhFadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  .vmh-mega-inner {
+    display: flex;
+    gap: 0;
+    padding: 2rem 0;
+    margin-inline: auto;
+  }
+
+  /* ── Mega: featured column ── */
+  .vmh-mega-col--featured {
+    flex: 0 0 200px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-right: 2rem;
+    border-right: 1px solid rgba(0,0,0,0.08);
+    margin-right: 1.5rem;
+  }
+
+  .vmh-mega-feat-link {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--vmh-mega-feat, #111);
+    text-decoration: none;
+    padding: 0.4rem 0;
+    transition: color 0.2s ease, letter-spacing 0.2s ease;
+    line-height: 1.2;
+  }
+
+  .vmh-mega-feat-link:hover {
+    color: var(--vmh-accent, #e53935);
+    letter-spacing: 0.08em;
+  }
+
+  /* ── Mega: regular columns ── */
+  .vmh-mega-col {
+    flex: 1;
+    padding: 0 1.5rem;
+    min-width: 0;
+  }
+
+  .vmh-mega-col:first-child:not(.vmh-mega-col--featured) {
+    padding-left: 0;
+  }
+
+  .vmh-mega-col-heading {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--vmh-mega-head, #999);
+    margin: 0 0 0.9rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1px solid rgba(0,0,0,0.1);
+  }
+
+  .vmh-mega-col-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+
+  .vmh-mega-link {
+    display: block;
+    padding: 0.42rem 0;
+    font-size: 0.875rem;
+    color: var(--vmh-mega-text, #444);
+    text-decoration: none;
+    transition: color 0.2s ease, padding-left 0.2s ease;
+    border-bottom: 1px solid transparent;
+  }
+
+  .vmh-mega-link:hover,
+  .vmh-mega-link--active {
+    color: var(--vmh-accent, #e53935);
+    padding-left: 8px;
+  }
+
+  /* ── ICONS ── */
+  .vmh-icons {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .vmh-icon-btn {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: var(--vmh-text, #fff);
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .vmh-icon-btn svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+  }
+
+  .vmh-icon-btn:hover {
+    background: rgba(255,255,255,0.1);
+    color: #ffffff;
+  }
+
+  /* Cart count badge */
+  .vmh-cart-count {
+    position: absolute;
+    top: 3px;
+    right: 3px;
+    min-width: 18px;
+    height: 18px;
+    background: var(--vmh-accent, #e53935);
+    color: #fff;
+    font-size: 0.65rem;
+    font-weight: 700;
+    line-height: 18px;
+    text-align: center;
+    border-radius: 9px;
+    padding: 0 4px;
+    pointer-events: none;
+    letter-spacing: 0;
+  }
+
+  /* ── SEARCH BAR ── */
+  .vmh-search-bar {
+    background: rgba(0,0,0,0.95);
+    border-top: 1px solid rgba(255,255,255,0.08);
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease, padding 0.3s ease;
+    padding: 0;
+  }
+
+  .vmh-search-bar.is-open {
+    max-height: 80px;
+    padding: 0.75rem 0;
+  }
+
+  .vmh-search-inner {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .vmh-search-inner form {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.15);
+    overflow: hidden;
+  }
+
+  .vmh-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #fff;
+    font-size: 0.95rem;
+    padding: 0.65rem 1rem;
+    font-family: inherit;
+  }
+
+  .vmh-search-input::placeholder { color: rgba(255,255,255,0.45); }
+
+  .vmh-search-submit {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,0.6);
+    padding: 0 0.75rem;
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+  }
+
+  .vmh-search-submit:hover { color: #fff; }
+  .vmh-search-submit svg { width: 18px; height: 18px; }
+
+  .vmh-search-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    border-radius: 50%;
+    color: rgba(255,255,255,0.7);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .vmh-search-close:hover { background: rgba(255,255,255,0.18); color: #fff; }
+  .vmh-search-close svg { width: 16px; height: 16px; }
+
+  /* ── MOBILE: hide hamburger on desktop ── */
+  .vmh-hamburger { display: none; }
+
+  /* ═══════════════════════════════════════════════
+     MOBILE DRAWER
+  ═══════════════════════════════════════════════ */
+  .vmh-drawer {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: min(340px, 88vw);
+    background: #0d0d0d;
+    z-index: 1000;
+    transform: translateX(-100%);
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    box-shadow: 4px 0 30px rgba(0,0,0,0.4);
+  }
+
+  .vmh-drawer.is-open {
+    transform: translateX(0);
+  }
+
+  .vmh-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.25rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+
+  .vmh-drawer-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.07);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    color: rgba(255,255,255,0.7);
+    transition: background 0.2s;
+  }
+  .vmh-drawer-close:hover { background: rgba(255,255,255,0.15); }
+  .vmh-drawer-close svg { width: 18px; height: 18px; }
+
+  .vmh-drawer-nav { flex: 1; overflow-y: auto; padding: 0.75rem 0; }
+
+  .vmh-drawer-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .vmh-drawer-item { border-bottom: 1px solid rgba(255,255,255,0.06); }
+
+  .vmh-drawer-link-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .vmh-drawer-link {
+    flex: 1;
+    display: block;
+    padding: 0.9rem 1.25rem;
+    color: rgba(255,255,255,0.88);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .vmh-drawer-link:hover { color: var(--vmh-accent, #e53935); }
+
+  .vmh-drawer-toggle {
+    padding: 0.9rem 1.25rem;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: rgba(255,255,255,0.5);
+    display: flex;
+    align-items: center;
+    transition: color 0.2s;
+  }
+
+  .vmh-drawer-toggle svg { width: 12px; height: 8px; transition: transform 0.25s ease; }
+  .vmh-drawer-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+  .vmh-drawer-toggle:hover { color: #fff; }
+
+  .vmh-drawer-sub {
+    list-style: none;
+    margin: 0;
+    padding: 0 0 0.5rem;
+    background: rgba(255,255,255,0.03);
+  }
+
+  .vmh-drawer-sub-link {
+    display: block;
+    padding: 0.6rem 1.75rem;
+    font-size: 0.855rem;
+    color: rgba(255,255,255,0.65);
+    text-decoration: none;
+    transition: color 0.2s, padding-left 0.2s;
+  }
+
+  .vmh-drawer-sub-link:hover { color: var(--vmh-accent, #e53935); padding-left: 2.25rem; }
+
+  .vmh-drawer-sub-link--bold {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 0.8rem;
+    color: rgba(255,255,255,0.88);
+  }
+
+  .vmh-drawer-footer {
+    border-top: 1px solid rgba(255,255,255,0.08);
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    flex-shrink: 0;
+  }
+
+  .vmh-drawer-footer-link {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    color: rgba(255,255,255,0.65);
+    text-decoration: none;
+    font-size: 0.875rem;
+    padding: 0.4rem 0;
+    transition: color 0.2s;
+  }
+
+  .vmh-drawer-footer-link:hover { color: #fff; }
+
+  /* ── OVERLAY ── */
+  .vmh-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.65);
+    backdrop-filter: blur(3px);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .vmh-overlay.is-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── Hamburger icon ── */
+  .vmh-hamburger {
+    flex-direction: column;
+    justify-content: center;
+    gap: 5px;
+    width: 40px;
+    height: 40px;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 4px;
+    transition: background 0.2s;
+  }
+
+  .vmh-hamburger:hover { background: rgba(255,255,255,0.1); }
+
+  .vmh-hamburger-bar {
+    display: block;
+    width: 100%;
+    height: 2px;
+    background: var(--vmh-text, #fff);
+    border-radius: 2px;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    transform-origin: center;
+  }
+
+  .vmh-hamburger.is-open .vmh-hamburger-bar:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .vmh-hamburger.is-open .vmh-hamburger-bar:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .vmh-hamburger.is-open .vmh-hamburger-bar:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* ═══════════════════════════════════════════════
+     RESPONSIVE
+  ═══════════════════════════════════════════════ */
+  @media (max-width: 989px) {
+    .vmh-nav, .vmh-search-bar { display: none; }
+    .vmh-hamburger { display: flex; }
+    body { padding-top: var(--vmh-height, 72px); }
+  }
+
+  @media (min-width: 990px) {
+    .vmh-drawer, .vmh-overlay { display: none !important; }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  const sectionId = '{{ section.id }}';
+  const header    = document.getElementById('vmh-' + sectionId);
+  if (!header) return;
+
+  /* ── Sticky scroll class ── */
+  const onScroll = () => {
+    header.classList.toggle('is-scrolled', window.scrollY > 10);
+  };
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  /* ── Search toggle ── */
+  const searchBar    = document.getElementById('vmh-search-bar');
+  const searchToggle = document.getElementById('vmh-search-toggle');
+  const searchClose  = document.getElementById('vmh-search-close');
+
+  if (searchBar && searchToggle) {
+    searchToggle.addEventListener('click', () => {
+      const open = !searchBar.classList.contains('is-open');
+      searchBar.classList.toggle('is-open', open);
+      searchBar.setAttribute('aria-hidden', String(!open));
+      searchToggle.setAttribute('aria-expanded', String(open));
+      if (open) searchBar.querySelector('.vmh-search-input')?.focus();
+    });
+  }
+
+  if (searchClose && searchBar) {
+    searchClose.addEventListener('click', () => {
+      searchBar.classList.remove('is-open');
+      searchBar.setAttribute('aria-hidden', 'true');
+      searchToggle?.setAttribute('aria-expanded', 'false');
+    });
+  }
+
+  /* ── Mobile drawer ── */
+  const drawer     = document.getElementById('vmh-drawer-' + sectionId);
+  const overlay    = document.getElementById('vmh-overlay-' + sectionId);
+  const hamburger  = document.getElementById('vmh-hamburger');
+  const drawerClose = document.getElementById('vmh-drawer-close-' + sectionId);
+
+  function openDrawer() {
+    if (!drawer) return;
+    drawer.classList.add('is-open');
+    overlay?.classList.add('is-visible');
+    hamburger?.classList.add('is-open');
+    hamburger?.setAttribute('aria-expanded', 'true');
+    drawer.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeDrawer() {
+    if (!drawer) return;
+    drawer.classList.remove('is-open');
+    overlay?.classList.remove('is-visible');
+    hamburger?.classList.remove('is-open');
+    hamburger?.setAttribute('aria-expanded', 'false');
+    drawer.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+  }
+
+  hamburger?.addEventListener('click', openDrawer);
+  drawerClose?.addEventListener('click', closeDrawer);
+  overlay?.addEventListener('click', closeDrawer);
+
+  /* ESC to close */
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') closeDrawer();
+  });
+
+  /* ── Mobile accordion toggles ── */
+  drawer?.querySelectorAll('.vmh-drawer-toggle').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const sub = btn.closest('.vmh-drawer-item')?.querySelector('.vmh-drawer-sub');
+      if (!sub) return;
+      const isOpen = !sub.hidden;
+      sub.hidden = isOpen;
+      btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  });
+
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Vape Mega Header",
+  "class": "vape-mega-header-section",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Logo"
+    },
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image",
+      "info": "Upload your store logo. Use a transparent PNG for best results."
+    },
+    {
+      "type": "range",
+      "id": "logo_height",
+      "label": "Logo height",
+      "min": 24,
+      "max": 80,
+      "step": 2,
+      "unit": "px",
+      "default": 42
+    },
+    {
+      "type": "header",
+      "content": "Navigation"
+    },
+    {
+      "type": "link_list",
+      "id": "main_menu",
+      "label": "Main navigation menu",
+      "default": "main-menu",
+      "info": "Top-level links come from this Shopify navigation menu. For mega menus, add a 'Mega Menu' block below and set the nav item title to match the link label exactly."
+    },
+    {
+      "type": "range",
+      "id": "nav_font_size",
+      "label": "Navigation font size",
+      "min": 11,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "default": 14
+    },
+    {
+      "type": "header",
+      "content": "Header Icons"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_search",
+      "label": "Show search icon",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search placeholder text",
+      "default": "Search products, brands…"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_account",
+      "label": "Show account icon",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_wishlist",
+      "label": "Show wishlist icon",
+      "default": true
+    },
+    {
+      "type": "url",
+      "id": "wishlist_url",
+      "label": "Wishlist page URL",
+      "info": "Where the wishlist icon links to."
+    },
+    {
+      "type": "header",
+      "content": "Header Appearance"
+    },
+    {
+      "type": "color",
+      "id": "header_bg",
+      "label": "Header background",
+      "default": "#0a0a0a"
+    },
+    {
+      "type": "color",
+      "id": "header_text_color",
+      "label": "Header text / icon colour",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent colour (active / hover)",
+      "default": "#e53935"
+    },
+    {
+      "type": "color",
+      "id": "header_border_color",
+      "label": "Header bottom border colour",
+      "default": "#1c1c1c"
+    },
+    {
+      "type": "range",
+      "id": "header_height",
+      "label": "Header height",
+      "min": 56,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 72
+    },
+    {
+      "type": "checkbox",
+      "id": "sticky",
+      "label": "Sticky header (fixed on scroll)",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Mega Menu Appearance"
+    },
+    {
+      "type": "color",
+      "id": "mega_bg",
+      "label": "Mega menu background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "mega_text_color",
+      "label": "Mega menu link colour",
+      "default": "#333333"
+    },
+    {
+      "type": "color",
+      "id": "mega_heading_color",
+      "label": "Column heading colour",
+      "default": "#999999"
+    },
+    {
+      "type": "color",
+      "id": "mega_featured_color",
+      "label": "Featured links colour",
+      "default": "#111111"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "mega_menu",
+      "name": "Mega Menu",
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "⚡ Set the 'Nav item title' to EXACTLY match a link in your main navigation menu (case-insensitive). Then add featured links and/or column menus below."
+        },
+        {
+          "type": "text",
+          "id": "nav_item_title",
+          "label": "Nav item title (must match menu link)",
+          "default": "Collections",
+          "info": "Must match exactly — e.g. if your nav has 'Shop', type 'Shop' here."
+        },
+        {
+          "type": "header",
+          "content": "Featured Bold Links (Left Column)"
+        },
+        {
+          "type": "paragraph",
+          "content": "These appear as bold uppercase links in the leftmost column (e.g. BEST SELLERS, NEW ARRIVAL). Leave blank to hide the column."
+        },
+        { "type": "text", "id": "feat_1_label", "label": "Featured link 1 label", "default": "BEST SELLERS" },
+        { "type": "url",  "id": "feat_1_url",   "label": "Featured link 1 URL" },
+        { "type": "text", "id": "feat_2_label", "label": "Featured link 2 label", "default": "NEW ARRIVAL" },
+        { "type": "url",  "id": "feat_2_url",   "label": "Featured link 2 URL" },
+        { "type": "text", "id": "feat_3_label", "label": "Featured link 3 label", "default": "TOP TRENDING" },
+        { "type": "url",  "id": "feat_3_url",   "label": "Featured link 3 URL" },
+        { "type": "text", "id": "feat_4_label", "label": "Featured link 4 label" },
+        { "type": "url",  "id": "feat_4_url",   "label": "Featured link 4 URL" },
+        { "type": "text", "id": "feat_5_label", "label": "Featured link 5 label" },
+        { "type": "url",  "id": "feat_5_url",   "label": "Featured link 5 URL" },
+        {
+          "type": "header",
+          "content": "Column 1"
+        },
+        {
+          "type": "paragraph",
+          "content": "Create a Shopify navigation menu (Online Store → Navigation → Add menu) and enter its handle below."
+        },
+        { "type": "text",      "id": "col_1_heading", "label": "Column 1 heading",      "default": "PRODUCTS CATEGORY" },
+        { "type": "link_list", "id": "col_1_menu",    "label": "Column 1 navigation menu" },
+        {
+          "type": "header",
+          "content": "Column 2"
+        },
+        { "type": "text",      "id": "col_2_heading", "label": "Column 2 heading",      "default": "PRODUCTS CATEGORY" },
+        { "type": "link_list", "id": "col_2_menu",    "label": "Column 2 navigation menu" },
+        {
+          "type": "header",
+          "content": "Column 3"
+        },
+        { "type": "text",      "id": "col_3_heading", "label": "Column 3 heading",      "default": "PRODUCTS CATEGORY" },
+        { "type": "link_list", "id": "col_3_menu",    "label": "Column 3 navigation menu" },
+        {
+          "type": "header",
+          "content": "Column 4"
+        },
+        { "type": "text",      "id": "col_4_heading", "label": "Column 4 heading" },
+        { "type": "link_list", "id": "col_4_menu",    "label": "Column 4 navigation menu" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Mega Header",
+      "category": "Header",
+      "settings": {
+        "main_menu": "main-menu",
+        "header_bg": "#0a0a0a",
+        "header_text_color": "#ffffff",
+        "accent_color": "#e53935",
+        "header_height": 72,
+        "mega_bg": "#ffffff",
+        "show_search": true,
+        "show_account": true,
+        "show_wishlist": true,
+        "sticky": true
+      },
+      "blocks": [
+        {
+          "type": "mega_menu",
+          "settings": {
+            "nav_item_title": "Collections",
+            "feat_1_label": "BEST SELLERS",
+            "feat_2_label": "NEW ARRIVAL",
+            "feat_3_label": "TOP TRENDING",
+            "col_1_heading": "PRODUCTS CATEGORY",
+            "col_2_heading": "PRODUCTS CATEGORY",
+            "col_3_heading": "PRODUCTS CATEGORY"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

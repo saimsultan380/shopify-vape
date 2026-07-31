@@ -1,0 +1,1484 @@
+{%- comment -%}
+  ============================================================
+  Vape Collection / Shop Page — sections/vape-collection.liquid
+
+  Matches reference design:
+  • Gray banner + breadcrumb
+  • Left sidebar: Categories pills + Filter By (availability,
+    price range, tag/list filters) with Clear All / Reset
+  • Sort + 3/2/list view toggles
+  • Product grid using vape-product-card
+  • Load more + progress
+  • Tags strip + service highlights
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign products_per_page = section.settings.products_per_page | default: 12
+  assign sort_by = collection.sort_by | default: collection.default_sort_by
+  assign total_products = collection.products_count
+  assign cat_menu = section.settings.category_menu
+  assign cat_limit = section.settings.categories_visible | default: 5
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --vcp-accent: {{ section.settings.accent_color }};
+    --vcp-banner-bg: {{ section.settings.banner_bg }};
+    --vcp-sidebar-w: {{ section.settings.sidebar_width }}px;
+  }
+{% endstyle %}
+
+<section id="vcp-{{ section.id }}" class="vcp" data-section-id="{{ section.id }}">
+
+  {%- comment -%} ── Banner ── {%- endcomment -%}
+  <div class="vcp-banner">
+    <div class="vcp-banner__inner">
+      <h1 class="vcp-banner__title">{{ collection.title | upcase | escape }}</h1>
+      <nav class="vcp-banner__crumb" aria-label="Breadcrumb">
+        <a href="{{ routes.root_url }}">Home</a>
+        <span aria-hidden="true">•</span>
+        <span>{{ collection.title | escape }}</span>
+      </nav>
+    </div>
+  </div>
+
+  <div class="vcp-shell">
+    {%- comment -%} Mobile filter toggle {%- endcomment -%}
+    <button type="button" class="vcp-mobile-filter-btn" data-vcp-open-filters>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="10" y1="18" x2="14" y2="18"/></svg>
+      Filters & Categories
+    </button>
+
+    <div class="vcp-layout">
+      {%- comment -%} ========== SIDEBAR ========== {%- endcomment -%}
+      <aside class="vcp-sidebar" data-vcp-sidebar>
+        <button type="button" class="vcp-sidebar__close" data-vcp-close-filters aria-label="Close filters">×</button>
+
+        {%- comment -%} Categories {%- endcomment -%}
+        <div class="vcp-side-block">
+          <h2 class="vcp-side-heading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            Categories
+          </h2>
+          <ul class="vcp-cats" role="list" data-vcp-cats>
+            {%- if cat_menu != blank -%}
+              {%- for link in cat_menu.links -%}
+                <li class="{% if forloop.index > cat_limit %}is-extra{% endif %}" {% if forloop.index > cat_limit %}hidden{% endif %}>
+                  <a
+                    href="{{ link.url }}"
+                    class="vcp-cat{% if link.active or link.current %} is-active{% endif %}"
+                  >
+                    {{ link.title | escape }}
+                  </a>
+                </li>
+              {%- endfor -%}
+              {%- if cat_menu.links.size > cat_limit -%}
+                <li>
+                  <button type="button" class="vcp-cat vcp-cat--more" data-vcp-see-more>
+                    See More +
+                  </button>
+                </li>
+              {%- endif -%}
+            {%- else -%}
+              {%- assign cat_index = 0 -%}
+              {%- for col in collections -%}
+                {%- if col.all_products_count > 0 -%}
+                  {%- assign cat_index = cat_index | plus: 1 -%}
+                  <li class="{% if cat_index > cat_limit %}is-extra{% endif %}" {% if cat_index > cat_limit %}hidden{% endif %}>
+                    <a
+                      href="{{ col.url }}"
+                      class="vcp-cat{% if collection.handle == col.handle %} is-active{% endif %}"
+                    >
+                      {{ col.title | escape }}
+                    </a>
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if cat_index > cat_limit -%}
+                <li>
+                  <button type="button" class="vcp-cat vcp-cat--more" data-vcp-see-more>
+                    See More +
+                  </button>
+                </li>
+              {%- endif -%}
+            {%- endif -%}
+          </ul>
+        </div>
+
+        {%- comment -%} Filters {%- endcomment -%}
+        <div class="vcp-side-block">
+          <h2 class="vcp-side-heading">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
+              <line x1="4" y1="8" x2="20" y2="8"/><circle cx="8" cy="8" r="2" fill="currentColor"/>
+              <line x1="4" y1="16" x2="20" y2="16"/><circle cx="16" cy="16" r="2" fill="currentColor"/>
+            </svg>
+            Filter By
+          </h2>
+
+          {%- assign clear_url = collection.url -%}
+          {%- if collection.current_vendor -%}
+            {%- assign clear_url = collection.url -%}
+          {%- endif -%}
+
+          <a href="{{ clear_url }}" class="vcp-clear-all">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+            Clear All
+          </a>
+
+          <form id="vcp-filter-form-{{ section.id }}" class="vcp-filters" data-vcp-filter-form>
+            {%- if collection.current_vendor != blank -%}
+              <input type="hidden" name="q" value="{{ collection.current_vendor | escape }}">
+            {%- endif -%}
+
+            {%- for filter in collection.filters -%}
+              {%- assign filter_id = 'vcp-filter-' | append: section.id | append: '-' | append: forloop.index -%}
+              <details class="vcp-facet" open>
+                <summary class="vcp-facet__summary">
+                  <span class="vcp-facet__title">
+                    <svg class="vcp-facet__caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+                    {{ filter.label | escape }}
+                  </span>
+                  <a href="{{ filter.url_to_remove }}" class="vcp-facet__reset" onclick="event.stopPropagation();">Reset</a>
+                </summary>
+
+                <div class="vcp-facet__body">
+                  {%- case filter.type -%}
+                    {%- when 'list', 'boolean' -%}
+                      <ul class="vcp-check-list" role="list">
+                        {%- for value in filter.values -%}
+                          <li>
+                            <label class="vcp-check{% unless value.count > 0 or value.active %} is-muted{% endunless %}">
+                              <input
+                                type="checkbox"
+                                name="{{ value.param_name }}"
+                                value="{{ value.value }}"
+                                {% if value.active %}checked{% endif %}
+                                {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                              >
+                              <span class="vcp-check__box" aria-hidden="true"></span>
+                              <span class="vcp-check__label">
+                                {{ value.label | escape }}
+                                <em>({{ value.count }})</em>
+                              </span>
+                            </label>
+                          </li>
+                        {%- endfor -%}
+                      </ul>
+
+                    {%- when 'price_range' -%}
+                      {%- liquid
+                        assign min_value = filter.min_value.value | default: 0 | money_without_currency | replace: ',', ''
+                        assign max_value = filter.max_value.value | default: filter.range_max | money_without_currency | replace: ',', ''
+                        assign range_max = filter.range_max | money_without_currency | replace: ',', '' | plus: 0
+                        assign range_min = 0
+                        if filter.min_value.value
+                          assign cur_min = filter.min_value.value | divided_by: 100.0
+                        else
+                          assign cur_min = 0
+                        endif
+                        if filter.max_value.value
+                          assign cur_max = filter.max_value.value | divided_by: 100.0
+                        else
+                          assign cur_max = filter.range_max | divided_by: 100.0
+                        endif
+                        assign range_max_num = filter.range_max | divided_by: 100.0
+                      -%}
+                      <div
+                        class="vcp-price"
+                        data-vcp-price
+                        data-min="0"
+                        data-max="{{ range_max_num }}"
+                        data-param-min="{{ filter.min_value.param_name }}"
+                        data-param-max="{{ filter.max_value.param_name }}"
+                      >
+                        <div class="vcp-price__slider">
+                          <div class="vcp-price__track" data-vcp-price-track></div>
+                          <input
+                            type="range"
+                            class="vcp-price__range"
+                            data-vcp-price-min
+                            min="0"
+                            max="{{ range_max_num }}"
+                            step="1"
+                            value="{{ cur_min | round }}"
+                          >
+                          <input
+                            type="range"
+                            class="vcp-price__range"
+                            data-vcp-price-max
+                            min="0"
+                            max="{{ range_max_num }}"
+                            step="1"
+                            value="{{ cur_max | round }}"
+                          >
+                        </div>
+                        <div class="vcp-price__inputs">
+                          <input
+                            type="number"
+                            name="{{ filter.min_value.param_name }}"
+                            class="vcp-price__num"
+                            data-vcp-price-min-input
+                            min="0"
+                            max="{{ range_max_num | round }}"
+                            value="{{ cur_min | round }}"
+                            placeholder="0"
+                          >
+                          <span>—</span>
+                          <input
+                            type="number"
+                            name="{{ filter.max_value.param_name }}"
+                            class="vcp-price__num"
+                            data-vcp-price-max-input
+                            min="0"
+                            max="{{ range_max_num | round }}"
+                            value="{{ cur_max | round }}"
+                            placeholder="{{ range_max_num | round }}"
+                          >
+                        </div>
+                      </div>
+                  {%- endcase -%}
+                </div>
+              </details>
+            {%- else -%}
+              <p class="vcp-filters-empty">No filters available. Enable storefront filters in Shopify Admin → Search & Discovery.</p>
+            {%- endfor -%}
+          </form>
+        </div>
+      </aside>
+
+      <div class="vcp-sidebar-overlay" data-vcp-overlay hidden></div>
+
+      {%- comment -%} ========== MAIN ========== {%- endcomment -%}
+      <div class="vcp-main">
+        <div class="vcp-toolbar">
+          <form class="vcp-sort" data-vcp-sort-form>
+            <label for="vcp-sort-{{ section.id }}">Sort by</label>
+            <div class="vcp-sort__wrap">
+              <select id="vcp-sort-{{ section.id }}" name="sort_by" data-vcp-sort>
+                {%- for option in collection.sort_options -%}
+                  <option value="{{ option.value }}" {% if option.value == sort_by %}selected{% endif %}>
+                    {{ option.name | escape }}
+                  </option>
+                {%- endfor -%}
+              </select>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+          </form>
+
+          <div class="vcp-views" role="group" aria-label="Product layout">
+            <button type="button" class="vcp-view is-active" data-vcp-view="3" aria-label="3 column grid" aria-pressed="true">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="3.5" height="3.5" rx="0.5"/><rect x="6.25" y="1" width="3.5" height="3.5" rx="0.5"/><rect x="11.5" y="1" width="3.5" height="3.5" rx="0.5"/><rect x="1" y="6.25" width="3.5" height="3.5" rx="0.5"/><rect x="6.25" y="6.25" width="3.5" height="3.5" rx="0.5"/><rect x="11.5" y="6.25" width="3.5" height="3.5" rx="0.5"/><rect x="1" y="11.5" width="3.5" height="3.5" rx="0.5"/><rect x="6.25" y="11.5" width="3.5" height="3.5" rx="0.5"/><rect x="11.5" y="11.5" width="3.5" height="3.5" rx="0.5"/></svg>
+            </button>
+            <button type="button" class="vcp-view" data-vcp-view="2" aria-label="2 column grid" aria-pressed="false">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="0.5"/><rect x="9" y="1" width="6" height="6" rx="0.5"/><rect x="1" y="9" width="6" height="6" rx="0.5"/><rect x="9" y="9" width="6" height="6" rx="0.5"/></svg>
+            </button>
+            <button type="button" class="vcp-view" data-vcp-view="list" aria-label="List view" aria-pressed="false">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="2" width="14" height="2" rx="0.5"/><rect x="1" y="7" width="14" height="2" rx="0.5"/><rect x="1" y="12" width="14" height="2" rx="0.5"/></svg>
+            </button>
+          </div>
+        </div>
+
+        {%- paginate collection.products by products_per_page -%}
+          {%- assign shown_end = paginate.current_offset | plus: collection.products.size -%}
+          {%- if shown_end > total_products -%}
+            {%- assign shown_end = total_products -%}
+          {%- endif -%}
+          {%- assign shown_start = paginate.current_offset | plus: 1 -%}
+          {%- if total_products == 0 -%}
+            {%- assign shown_start = 0 -%}
+          {%- endif -%}
+          {%- assign progress_pct = 0 -%}
+          {%- if total_products > 0 -%}
+            {%- assign progress_pct = shown_end | times: 100.0 | divided_by: total_products -%}
+          {%- endif -%}
+
+          <div
+            class="vcp-grid vcp-grid--cols-3"
+            data-vcp-grid
+            data-next-url="{% if paginate.next %}{{ paginate.next.url }}{% endif %}"
+          >
+            {%- for product in collection.products -%}
+              {% render 'vape-product-card', product: product, section_id: section.id %}
+            {%- else -%}
+              <div class="vcp-empty">
+                <p>No products found matching your filters.</p>
+                <a href="{{ collection.url }}" class="vcp-clear-all">Clear All Filters</a>
+              </div>
+            {%- endfor -%}
+          </div>
+
+          {%- if total_products > 0 -%}
+            <div class="vcp-loadmore" data-vcp-loadmore>
+              <p class="vcp-loadmore__text" data-vcp-showing>
+                Showing {{ shown_start }}–{{ shown_end }} of {{ total_products }} total
+              </p>
+              <div class="vcp-loadmore__bar" role="progressbar" aria-valuenow="{{ progress_pct | round }}" aria-valuemin="0" aria-valuemax="100">
+                <span style="width: {{ progress_pct }}%;" data-vcp-progress></span>
+              </div>
+              {%- if paginate.next -%}
+                <button type="button" class="vcp-loadmore__btn" data-vcp-load-btn data-next="{{ paginate.next.url }}">
+                  LOAD MORE ITEMS
+                </button>
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        {%- endpaginate -%}
+      </div>
+    </div>
+  </div>
+
+  {%- comment -%} ── Tags ── {%- endcomment -%}
+  {%- if section.settings.show_tags -%}
+    <div class="vcp-tags">
+      <div class="vcp-tags__inner">
+        <h2 class="vcp-tags__heading">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+          Tags
+        </h2>
+        <ul class="vcp-tags__list" role="list">
+          {%- if section.settings.tags_menu != blank -%}
+            {%- for link in section.settings.tags_menu.links -%}
+              <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
+            {%- endfor -%}
+          {%- else -%}
+            {%- assign tag_count = 0 -%}
+            {%- for tag in collection.all_tags limit: 12 -%}
+              <li>
+                <a href="{{ collection.url }}/{{ tag | handleize }}">{{ tag | escape }}</a>
+              </li>
+              {%- assign tag_count = tag_count | plus: 1 -%}
+            {%- endfor -%}
+            {%- if tag_count == 0 -%}
+              {%- assign fallback_tags = 'VapeJuice,VapeLife,VapeLove,VapeMods,VapeOn,VapePods,VapeTrend,VapeTricks' | split: ',' -%}
+              {%- for tag in fallback_tags -%}
+                <li><span>{{ tag }}</span></li>
+              {%- endfor -%}
+            {%- endif -%}
+          {%- endif -%}
+        </ul>
+      </div>
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Services ── {%- endcomment -%}
+  {%- if section.blocks.size > 0 -%}
+    <div class="vcp-services">
+      <div class="vcp-services__inner">
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'service' -%}
+            <div class="vcp-service" {{ block.shopify_attributes }}>
+              <div class="vcp-service__icon" aria-hidden="true">
+                {%- case block.settings.icon -%}
+                  {%- when 'truck' -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                  {%- when 'shield' -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                  {%- else -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+                {%- endcase -%}
+              </div>
+              <div>
+                <h3 class="vcp-service__title">{{ block.settings.title | escape }}</h3>
+                <p class="vcp-service__text">{{ block.settings.text | escape }}</p>
+              </div>
+            </div>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    </div>
+  {%- endif -%}
+</section>
+
+<style>
+  .vcp {
+    font-family: var(--vape-font-primary, 'Inter', system-ui, sans-serif);
+    color: #222;
+    background: #fff;
+  }
+
+  /* Banner */
+  .vcp-banner {
+    background: var(--vcp-banner-bg, #f0f0f0);
+    padding: 2.75rem 0;
+  }
+  .vcp-banner__inner {
+    max-width: var(--page-width, 1400px);
+    margin: 0 auto;
+    padding-inline: var(--vape-page-padding, clamp(1rem, 4vw, 3.5rem));
+  }
+  .vcp-banner__title {
+    margin: 0 0 0.5rem;
+    font-size: clamp(1.75rem, 4vw, 2.5rem);
+    font-weight: 900;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: #111;
+    line-height: 1.1;
+  }
+  .vcp-banner__crumb {
+    display: flex;
+    gap: 0.45rem;
+    align-items: center;
+    font-size: 0.875rem;
+    color: #777;
+  }
+  .vcp-banner__crumb a {
+    color: #777;
+    text-decoration: none;
+  }
+  .vcp-banner__crumb a:hover { color: var(--vcp-accent, #e53935); }
+
+  .vcp-shell {
+    max-width: var(--page-width, 1400px);
+    margin: 0 auto;
+    padding: 2.5rem var(--vape-page-padding, clamp(1rem, 4vw, 3.5rem)) 1rem;
+  }
+
+  .vcp-mobile-filter-btn {
+    display: none;
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-bottom: 1.25rem;
+    padding: 0.85rem 1rem;
+    background: #111;
+    color: #fff;
+    border: 0;
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    cursor: pointer;
+  }
+  @media (max-width: 989px) {
+    .vcp-mobile-filter-btn { display: inline-flex; }
+  }
+
+  .vcp-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  @media (min-width: 990px) {
+    .vcp-layout {
+      grid-template-columns: var(--vcp-sidebar-w, 260px) minmax(0, 1fr);
+      gap: 2.5rem;
+      align-items: start;
+    }
+  }
+
+  /* Sidebar */
+  .vcp-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+  .vcp-sidebar__close {
+    display: none;
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: #f0f0f0;
+    font-size: 1.5rem;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  @media (max-width: 989px) {
+    .vcp-sidebar {
+      position: fixed;
+      inset: 0 auto 0 0;
+      width: min(340px, 88vw);
+      background: #fff;
+      z-index: 1000;
+      padding: 3rem 1.25rem 2rem;
+      overflow-y: auto;
+      transform: translateX(-105%);
+      transition: transform 0.3s ease;
+      box-shadow: 8px 0 30px rgba(0,0,0,0.12);
+    }
+    .vcp-sidebar.is-open { transform: translateX(0); }
+    .vcp-sidebar__close { display: flex; align-items: center; justify-content: center; }
+    .vcp-sidebar-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 999;
+    }
+    .vcp-sidebar-overlay[hidden] { display: none !important; }
+  }
+
+  .vcp-side-heading {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    margin: 0 0 1rem;
+    font-size: 0.95rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #111;
+  }
+
+  .vcp-cats {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .vcp-cat {
+    display: block;
+    width: 100%;
+    text-align: left;
+    padding: 0.7rem 0.9rem;
+    background: #f0f0f0;
+    border: 0;
+    border-radius: 4px;
+    color: #333;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .vcp-cat:hover,
+  .vcp-cat.is-active {
+    background: #e6e6e6;
+    color: #111;
+  }
+  .vcp-cat--more {
+    background: transparent;
+    padding-left: 0.25rem;
+    font-weight: 700;
+    color: #111;
+  }
+  .vcp-cat--more:hover { background: transparent; color: var(--vcp-accent, #e53935); }
+
+  .vcp-clear-all {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: 100%;
+    padding: 0.8rem 1rem;
+    margin-bottom: 1.15rem;
+    background: #2a2a2a;
+    color: #fff !important;
+    border: 0;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: background 0.2s ease;
+  }
+  .vcp-clear-all:hover { background: #111; }
+
+  .vcp-facet {
+    border-bottom: 1px solid #eee;
+    padding: 0.35rem 0;
+  }
+  .vcp-facet__summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.75rem 0;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #111;
+  }
+  .vcp-facet__summary::-webkit-details-marker { display: none; }
+  .vcp-facet__title {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .vcp-facet__caret {
+    transition: transform 0.2s ease;
+  }
+  details[open] > .vcp-facet__summary .vcp-facet__caret {
+    transform: rotate(180deg);
+  }
+  .vcp-facet__reset {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: #999;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+  .vcp-facet__reset:hover { color: var(--vcp-accent, #e53935); }
+  .vcp-facet__body { padding: 0 0 1rem; }
+
+  .vcp-check-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+  }
+  .vcp-check {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: #333;
+  }
+  .vcp-check.is-muted { color: #bbb; }
+  .vcp-check input { position: absolute; opacity: 0; pointer-events: none; }
+  .vcp-check__box {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid #bbb;
+    border-radius: 2px;
+    flex-shrink: 0;
+    position: relative;
+    background: #fff;
+  }
+  .vcp-check input:checked + .vcp-check__box {
+    background: #111;
+    border-color: #111;
+  }
+  .vcp-check input:checked + .vcp-check__box::after {
+    content: '';
+    position: absolute;
+    left: 4px;
+    top: 1px;
+    width: 5px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+  }
+  .vcp-check__label em {
+    font-style: normal;
+    color: #999;
+    margin-left: 0.2rem;
+  }
+
+  /* Price slider */
+  .vcp-price__slider {
+    position: relative;
+    height: 28px;
+    margin: 0.5rem 0 1rem;
+  }
+  .vcp-price__track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: #e0e0e0;
+    border-radius: 99px;
+    transform: translateY(-50%);
+  }
+  .vcp-price__track::before {
+    content: '';
+    position: absolute;
+    height: 100%;
+    left: var(--vcp-price-left, 0%);
+    right: var(--vcp-price-right, 0%);
+    background: #333;
+    border-radius: 99px;
+  }
+  .vcp-price__range {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    appearance: none;
+    background: none;
+    pointer-events: none;
+    margin: 0;
+  }
+  .vcp-price__range::-webkit-slider-thumb {
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #111;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .vcp-price__range::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: #111;
+    border: 2px solid #fff;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.25);
+    pointer-events: auto;
+    cursor: pointer;
+  }
+  .vcp-price__inputs {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .vcp-price__num {
+    width: 100%;
+    max-width: 90px;
+    padding: 0.45rem 0.55rem !important;
+    border: 1px solid #ddd !important;
+    border-radius: 3px !important;
+    background: #fff !important;
+    font-size: 0.85rem !important;
+    text-align: center;
+    box-shadow: none !important;
+  }
+
+  .vcp-filters-empty {
+    font-size: 0.8rem;
+    color: #888;
+    line-height: 1.45;
+  }
+
+  /* Toolbar */
+  .vcp-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+    flex-wrap: wrap;
+  }
+  .vcp-sort {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: #555;
+  }
+  .vcp-sort__wrap {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+  .vcp-sort select {
+    appearance: none;
+    border: 0 !important;
+    background: transparent !important;
+    font-weight: 600;
+    color: #111 !important;
+    padding: 0.25rem 1.4rem 0.25rem 0.15rem !important;
+    font-size: 0.9rem !important;
+    cursor: pointer;
+    box-shadow: none !important;
+  }
+  .vcp-sort__wrap svg {
+    position: absolute;
+    right: 0;
+    pointer-events: none;
+    color: #666;
+  }
+
+  .vcp-views {
+    display: flex;
+    gap: 0.4rem;
+  }
+  .vcp-view {
+    width: 36px;
+    height: 36px;
+    border: 0;
+    background: #f0f0f0;
+    color: #888;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+  .vcp-view.is-active {
+    background: #111;
+    color: #fff;
+  }
+
+  /* Grid */
+  .vcp-grid {
+    display: grid;
+    gap: 1.25rem;
+  }
+  .vcp-grid--cols-3 {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .vcp-grid--cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .vcp-grid--list {
+    grid-template-columns: 1fr;
+  }
+  @media (max-width: 989px) {
+    .vcp-grid--cols-3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 575px) {
+    .vcp-grid--cols-3,
+    .vcp-grid--cols-2 { grid-template-columns: 1fr; }
+  }
+
+  .vcp-grid .vfp-card-item {
+    flex: none;
+    max-width: none;
+    width: 100%;
+  }
+  .vcp-grid .vfp-card {
+    background: #fff;
+    border: 1px solid #eeeeee;
+    border-radius: 4px;
+    padding: 1.15rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: box-shadow 0.25s ease, border-color 0.25s ease;
+  }
+  .vcp-grid .vfp-card:hover {
+    box-shadow: 0 10px 28px rgba(0,0,0,0.07);
+    border-color: #e5e5e5;
+  }
+  .vcp-grid .vfp-card-badge {
+    position: absolute;
+    top: 0.85rem;
+    left: 0.85rem;
+    background: #e53935;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.22rem 0.45rem;
+    border-radius: 3px;
+    z-index: 2;
+  }
+  .vcp-grid .vfp-card-image-wrap {
+    position: relative;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 0.85rem;
+  }
+  .vcp-grid .vfp-img-primary,
+  .vcp-grid .vfp-img-secondary {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .vcp-grid .vfp-img-secondary {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.35s ease;
+  }
+  .vcp-grid .vfp-card:hover .vfp-img-primary.has-secondary { opacity: 0; }
+  .vcp-grid .vfp-card:hover .vfp-img-secondary { opacity: 1; }
+  .vcp-grid .vfp-card-actions {
+    position: absolute;
+    right: 0.85rem;
+    bottom: 5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    z-index: 3;
+  }
+  .vcp-grid .vfp-card:hover .vfp-card-actions { opacity: 1; }
+  .vcp-grid .vfp-action-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 0;
+    background: #f4f4f4;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .vcp-grid .vfp-action-btn:hover { background: #e53935; color: #fff; }
+  .vcp-grid .vfp-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    margin-top: auto;
+  }
+  .vcp-grid .vfp-rating { color: #ddd; font-size: 0.85rem; letter-spacing: 1px; }
+  .vcp-grid .vfp-vendor {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+  }
+  .vcp-grid .vfp-vendor-name { color: #e53935; }
+  .vcp-grid .vfp-product-title {
+    margin: 0;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #111;
+    line-height: 1.35;
+  }
+  .vcp-grid .vfp-product-title a { color: inherit; text-decoration: none; }
+  .vcp-grid .vfp-price-row {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.2rem;
+  }
+  .vcp-grid .vfp-price-sale {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #e53935;
+  }
+  .vcp-grid .vfp-price-compare {
+    font-size: 0.85rem;
+    color: #999;
+    text-decoration: line-through;
+  }
+
+  /* List view */
+  .vcp-grid--list .vfp-card {
+    flex-direction: row;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1rem 1.25rem;
+  }
+  .vcp-grid--list .vfp-card-image-wrap {
+    width: 160px;
+    flex: 0 0 160px;
+    margin: 0;
+    aspect-ratio: 1;
+  }
+  .vcp-grid--list .vfp-card-content { margin: 0; flex: 1; }
+  .vcp-grid--list .vfp-card-actions {
+    position: static;
+    opacity: 1;
+    flex-direction: row;
+  }
+
+  .vcp-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #666;
+  }
+
+  /* Load more */
+  .vcp-loadmore {
+    margin: 2.75rem auto 1rem;
+    max-width: 420px;
+    text-align: center;
+  }
+  .vcp-loadmore__text {
+    margin: 0 0 0.75rem;
+    font-size: 0.85rem;
+    color: #888;
+  }
+  .vcp-loadmore__bar {
+    height: 4px;
+    background: #e8e8e8;
+    border-radius: 99px;
+    overflow: hidden;
+    margin-bottom: 1.25rem;
+  }
+  .vcp-loadmore__bar span {
+    display: block;
+    height: 100%;
+    background: #333;
+    border-radius: 99px;
+    transition: width 0.35s ease;
+  }
+  .vcp-loadmore__btn {
+    width: 100%;
+    padding: 0.95rem 1.5rem;
+    background: #222;
+    color: #fff;
+    border: 0;
+    font-size: 0.85rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s ease;
+  }
+  .vcp-loadmore__btn:hover { background: #111; }
+  .vcp-loadmore__btn:disabled { opacity: 0.55; cursor: wait; }
+
+  /* Tags */
+  .vcp-tags {
+    background: #f5f5f5;
+    padding: 1.75rem 0;
+    margin-top: 2.5rem;
+  }
+  .vcp-tags__inner {
+    max-width: var(--page-width, 1400px);
+    margin: 0 auto;
+    padding-inline: var(--vape-page-padding, clamp(1rem, 4vw, 3.5rem));
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    flex-wrap: wrap;
+  }
+  .vcp-tags__heading {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    margin: 0;
+    font-size: 0.85rem;
+    font-weight: 900;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #111;
+    white-space: nowrap;
+  }
+  .vcp-tags__list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .vcp-tags__list a,
+  .vcp-tags__list span {
+    display: inline-block;
+    padding: 0.45rem 0.85rem;
+    background: #fff;
+    border: 1px solid #e2e2e2;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #222;
+    text-decoration: none;
+    transition: border-color 0.2s ease, color 0.2s ease;
+  }
+  .vcp-tags__list a:hover {
+    border-color: #111;
+    color: #111;
+  }
+
+  /* Services */
+  .vcp-services {
+    padding: 3rem 0;
+  }
+  .vcp-services__inner {
+    max-width: var(--page-width, 1400px);
+    margin: 0 auto;
+    padding-inline: var(--vape-page-padding, clamp(1rem, 4vw, 3.5rem));
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.75rem;
+  }
+  @media (min-width: 750px) {
+    .vcp-services__inner { grid-template-columns: repeat(3, 1fr); gap: 2rem; }
+  }
+  .vcp-service {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+  }
+  .vcp-service__icon {
+    flex: 0 0 56px;
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: #ececec;
+    color: #333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .vcp-service__title {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 700;
+    color: #111;
+  }
+  .vcp-service__text {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.55;
+    color: #666;
+  }
+</style>
+
+<script>
+(function () {
+  const root = document.getElementById('vcp-{{ section.id }}');
+  if (!root) return;
+
+  const sidebar = root.querySelector('[data-vcp-sidebar]');
+  const overlay = root.querySelector('[data-vcp-overlay]');
+  const grid = root.querySelector('[data-vcp-grid]');
+  const filterForm = root.querySelector('[data-vcp-filter-form]');
+
+  /* Mobile filters */
+  function openFilters() {
+    sidebar?.classList.add('is-open');
+    if (overlay) overlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeFilters() {
+    sidebar?.classList.remove('is-open');
+    if (overlay) overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+  root.querySelector('[data-vcp-open-filters]')?.addEventListener('click', openFilters);
+  root.querySelector('[data-vcp-close-filters]')?.addEventListener('click', closeFilters);
+  overlay?.addEventListener('click', closeFilters);
+
+  /* See more categories */
+  root.querySelector('[data-vcp-see-more]')?.addEventListener('click', (e) => {
+    const btn = e.currentTarget;
+    const extras = root.querySelectorAll('.vcp-cats .is-extra');
+    const expanding = btn.textContent.indexOf('+') !== -1;
+    extras.forEach((el) => { el.hidden = !expanding; });
+    btn.textContent = expanding ? 'See Less −' : 'See More +';
+  });
+
+  /* View toggles */
+  const viewBtns = root.querySelectorAll('[data-vcp-view]');
+  const savedView = localStorage.getItem('vcp-view') || '3';
+  function setView(view) {
+    viewBtns.forEach((btn) => {
+      const on = btn.dataset.vcpView === view;
+      btn.classList.toggle('is-active', on);
+      btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    if (!grid) return;
+    grid.classList.remove('vcp-grid--cols-3', 'vcp-grid--cols-2', 'vcp-grid--list');
+    if (view === 'list') grid.classList.add('vcp-grid--list');
+    else if (view === '2') grid.classList.add('vcp-grid--cols-2');
+    else grid.classList.add('vcp-grid--cols-3');
+    localStorage.setItem('vcp-view', view);
+  }
+  setView(savedView);
+  viewBtns.forEach((btn) => btn.addEventListener('click', () => setView(btn.dataset.vcpView)));
+
+  /* Sort */
+  root.querySelector('[data-vcp-sort]')?.addEventListener('change', (e) => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('sort_by', e.target.value);
+    window.location.href = url.toString();
+  });
+
+  /* Filter form submit on change */
+  let filterTimer;
+  function submitFilters() {
+    if (!filterForm) return;
+    const data = new FormData(filterForm);
+    const url = new URL(window.location.href);
+    /* Clear existing filter params, keep sort */
+    const sort = url.searchParams.get('sort_by');
+    [...url.searchParams.keys()].forEach((k) => {
+      if (k.startsWith('filter.') || k === 'page') url.searchParams.delete(k);
+    });
+    for (const [key, value] of data.entries()) {
+      if (value === '' || value == null) continue;
+      url.searchParams.append(key, value);
+    }
+    if (sort) url.searchParams.set('sort_by', sort);
+    window.location.href = url.toString();
+  }
+
+  filterForm?.querySelectorAll('input[type="checkbox"]').forEach((input) => {
+    input.addEventListener('change', () => {
+      clearTimeout(filterTimer);
+      filterTimer = setTimeout(submitFilters, 150);
+    });
+  });
+
+  /* Price dual range */
+  const price = root.querySelector('[data-vcp-price]');
+  if (price) {
+    const minRange = price.querySelector('[data-vcp-price-min]');
+    const maxRange = price.querySelector('[data-vcp-price-max]');
+    const minInput = price.querySelector('[data-vcp-price-min-input]');
+    const maxInput = price.querySelector('[data-vcp-price-max-input]');
+    const track = price.querySelector('[data-vcp-price-track]');
+    const absoluteMax = parseFloat(price.dataset.max) || 100;
+
+    function syncTrack() {
+      const min = parseFloat(minRange.value);
+      const max = parseFloat(maxRange.value);
+      const left = (min / absoluteMax) * 100;
+      const right = 100 - (max / absoluteMax) * 100;
+      track.style.setProperty('--vcp-price-left', left + '%');
+      track.style.setProperty('--vcp-price-right', right + '%');
+    }
+
+    function clampRanges(from) {
+      let min = parseFloat(minRange.value);
+      let max = parseFloat(maxRange.value);
+      if (min > max) {
+        if (from === 'min') minRange.value = max;
+        else maxRange.value = min;
+      }
+      minInput.value = minRange.value;
+      maxInput.value = maxRange.value;
+      syncTrack();
+    }
+
+    minRange.addEventListener('input', () => clampRanges('min'));
+    maxRange.addEventListener('input', () => clampRanges('max'));
+    minRange.addEventListener('change', () => { clearTimeout(filterTimer); filterTimer = setTimeout(submitFilters, 250); });
+    maxRange.addEventListener('change', () => { clearTimeout(filterTimer); filterTimer = setTimeout(submitFilters, 250); });
+
+    minInput.addEventListener('change', () => {
+      minRange.value = minInput.value;
+      clampRanges('min');
+      submitFilters();
+    });
+    maxInput.addEventListener('change', () => {
+      maxRange.value = maxInput.value;
+      clampRanges('max');
+      submitFilters();
+    });
+    syncTrack();
+  }
+
+  /* Load more */
+  const loadBtn = root.querySelector('[data-vcp-load-btn]');
+  const showingEl = root.querySelector('[data-vcp-showing]');
+  const progressEl = root.querySelector('[data-vcp-progress]');
+  const totalProducts = {{ total_products | json }};
+
+  loadBtn?.addEventListener('click', async () => {
+    const next = loadBtn.dataset.next;
+    if (!next) return;
+    loadBtn.disabled = true;
+    loadBtn.textContent = 'LOADING…';
+
+    try {
+      const res = await fetch(next);
+      const html = await res.text();
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const remoteGrid = doc.querySelector('[data-vcp-grid]');
+      const remoteBtn = doc.querySelector('[data-vcp-load-btn]');
+      const remoteShowing = doc.querySelector('[data-vcp-showing]');
+      const remoteProgress = doc.querySelector('[data-vcp-progress]');
+
+      if (remoteGrid) {
+        Array.from(remoteGrid.children).forEach((card) => grid.appendChild(card));
+      }
+
+      if (remoteShowing && showingEl) showingEl.textContent = remoteShowing.textContent;
+      if (remoteProgress && progressEl) {
+        progressEl.style.width = remoteProgress.style.width;
+      }
+
+      if (remoteBtn && remoteBtn.dataset.next) {
+        loadBtn.dataset.next = remoteBtn.dataset.next;
+        loadBtn.disabled = false;
+        loadBtn.textContent = 'LOAD MORE ITEMS';
+      } else {
+        loadBtn.remove();
+      }
+
+      /* rebind quick add on new cards */
+      grid.querySelectorAll('[data-quick-add-btn]').forEach((btn) => {
+        if (btn.dataset.bound) return;
+        btn.dataset.bound = '1';
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const id = btn.dataset.variantId;
+          if (!id) return;
+          fetch((window.Shopify?.routes?.root || '/') + 'cart/add.js', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: [{ id: parseInt(id, 10), quantity: 1 }] })
+          }).then((r) => r.json()).then(() => {
+            document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+          });
+        });
+      });
+    } catch (err) {
+      loadBtn.disabled = false;
+      loadBtn.textContent = 'LOAD MORE ITEMS';
+    }
+  });
+
+  /* Initial quick-add bind */
+  root.querySelectorAll('[data-quick-add-btn]').forEach((btn) => {
+    btn.dataset.bound = '1';
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
+      const id = btn.dataset.variantId;
+      if (!id) return;
+      fetch((window.Shopify?.routes?.root || '/') + 'cart/add.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: [{ id: parseInt(id, 10), quantity: 1 }] })
+      }).then((r) => r.json()).then(() => {
+        document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+      });
+    });
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Vape Collection",
+  "tag": "section",
+  "class": "section-vape-collection",
+  "enabled_on": {
+    "templates": ["collection"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Banner"
+    },
+    {
+      "type": "color",
+      "id": "banner_bg",
+      "label": "Banner background",
+      "default": "#f0f0f0"
+    },
+    {
+      "type": "header",
+      "content": "Sidebar"
+    },
+    {
+      "type": "link_list",
+      "id": "category_menu",
+      "label": "Categories menu",
+      "info": "Optional. If empty, collections with products are listed."
+    },
+    {
+      "type": "range",
+      "id": "categories_visible",
+      "label": "Visible categories before See More",
+      "min": 3,
+      "max": 12,
+      "step": 1,
+      "default": 5
+    },
+    {
+      "type": "range",
+      "id": "sidebar_width",
+      "label": "Sidebar width",
+      "min": 220,
+      "max": 320,
+      "step": 10,
+      "unit": "px",
+      "default": 260
+    },
+    {
+      "type": "header",
+      "content": "Products"
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 6,
+      "max": 36,
+      "step": 3,
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Tags"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "Show tags strip",
+      "default": true
+    },
+    {
+      "type": "link_list",
+      "id": "tags_menu",
+      "label": "Tags menu",
+      "info": "Optional. Falls back to collection tags."
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent color",
+      "default": "#e53935"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "service",
+      "name": "Service highlight",
+      "limit": 3,
+      "settings": [
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "truck", "label": "Truck / Delivery" },
+            { "value": "shield", "label": "Shield / Payment" },
+            { "value": "headset", "label": "Headset / Support" }
+          ],
+          "default": "truck"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "Free Us Delivery"
+        },
+        {
+          "type": "textarea",
+          "id": "text",
+          "label": "Text",
+          "default": "For US Order (including Alaska and Hawaii) or orders over $200"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Collection",
+      "category": "Collection",
+      "blocks": [
+        {
+          "type": "service",
+          "settings": {
+            "icon": "truck",
+            "title": "Free Us Delivery",
+            "text": "For US Order (including Alaska and Hawaii) or orders over $200"
+          }
+        },
+        {
+          "type": "service",
+          "settings": {
+            "icon": "shield",
+            "title": "Secure Payment",
+            "text": "We accept Visa, American Express, Paypal, Payoneer Mastercard and Discover"
+          }
+        },
+        {
+          "type": "service",
+          "settings": {
+            "icon": "headset",
+            "title": "Support 24/7",
+            "text": "Contact us 24 hours a day, 7 days a week. Call Us: 0123-456-789"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

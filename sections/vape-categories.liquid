@@ -1,0 +1,829 @@
+{%- comment -%}
+  ============================================================
+  Vape Categories Section — sections/vape-categories.liquid
+
+  Design matches reference: 6 vibrant gradient cards in a row,
+  product image centred on each card, category title below.
+  • Desktop: configurable CSS grid (3–8 cols)
+  • Tablet:  configurable columns
+  • Mobile:  auto-sliding carousel (optional, configurable)
+  • All spacing, colours, typography → Theme Customizer
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign block_count = section.blocks | size
+  assign autoplay_ms = section.settings.mobile_autoplay_speed | times: 1000
+-%}
+
+{%- comment -%} Section-scoped CSS custom properties {%- endcomment -%}
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --vcat-cols-desktop: {{ section.settings.columns_desktop }};
+    --vcat-cols-tablet:  {{ section.settings.columns_tablet }};
+    --vcat-gap:          {{ section.settings.card_gap }}px;
+    --vcat-radius:       {{ section.settings.card_border_radius }}px;
+    --vcat-img-pad:      {{ section.settings.image_padding }}%;
+    --vcat-title-color:  {{ section.settings.title_color }};
+    --vcat-title-size:   {{ section.settings.title_font_size }}px;
+    --vcat-section-bg:   {{ section.settings.section_background }};
+    padding-block-start: {{ section.settings.padding_top }}px;
+    padding-block-end:   {{ section.settings.padding_bottom }}px;
+    background:          {{ section.settings.section_background }};
+  }
+{% endstyle %}
+
+<section
+  id="vcat-{{ section.id }}"
+  class="vcat"
+  data-mobile-slider="{{ section.settings.enable_mobile_slider }}"
+  data-autoplay="{{ section.settings.mobile_autoplay }}"
+  data-autoplay-speed="{{ autoplay_ms }}"
+>
+
+  {%- comment -%} ── Section heading ── {%- endcomment -%}
+  {%- if section.settings.heading != blank -%}
+    <div class="vcat__header">
+      <{{ section.settings.heading_tag }}
+        class="vcat__heading vcat__heading--{{ section.settings.heading_size }}"
+        style="color: {{ section.settings.heading_color }};"
+      >
+        {{- section.settings.heading | escape -}}
+      </{{ section.settings.heading_tag }}>
+      {%- if section.settings.subheading != blank -%}
+        <p class="vcat__subheading" style="color: {{ section.settings.subheading_color }};">
+          {{- section.settings.subheading | escape -}}
+        </p>
+      {%- endif -%}
+    </div>
+  {%- endif -%}
+
+  {%- comment -%} ── Cards grid / slider track ── {%- endcomment -%}
+  <div
+    class="vcat__track"
+    role="list"
+    aria-label="{{ section.settings.heading | default: 'Product categories' | escape }}"
+  >
+
+    {%- for block in section.blocks -%}
+      {%- if block.type == 'category' -%}
+        {%- liquid
+          assign bg_start = block.settings.bg_color_start | default: '#f59e0b'
+          assign bg_end   = block.settings.bg_color_end   | default: '#f97316'
+          assign angle    = block.settings.gradient_angle  | default: '135'
+          assign cat_link = block.settings.url | default: '#'
+        -%}
+
+        <div
+          class="vcat__item"
+          role="listitem"
+          {{ block.shopify_attributes }}
+        >
+          <a
+            href="{{ cat_link }}"
+            class="vcat__card"
+            style="background: linear-gradient({{ angle }}deg, {{ bg_start }}, {{ bg_end }});"
+            aria-label="{{ block.settings.title | default: 'Category' | escape }}"
+          >
+            {%- comment -%} Product image ── {%- endcomment -%}
+            <div class="vcat__img-wrap" aria-hidden="true">
+              {%- if block.settings.image != blank -%}
+                {{-
+                  block.settings.image
+                  | image_url: width: 400
+                  | image_tag:
+                    loading:  'lazy',
+                    class:    'vcat__img',
+                    widths:   '150, 200, 300, 400',
+                    sizes:    '(max-width: 749px) 40vw, (max-width: 989px) 25vw, 15vw',
+                    alt:      block.settings.image.alt | default: block.settings.title | escape
+                -}}
+              {%- else -%}
+                {%- comment -%} Placeholder SVG when no image is set {%- endcomment -%}
+                <div class="vcat__img-placeholder">
+                  {{- 'product-1' | placeholder_svg_tag: 'vcat__placeholder-svg' -}}
+                </div>
+              {%- endif -%}
+            </div>
+          </a>
+
+          {%- comment -%} Category title below card ── {%- endcomment -%}
+          {%- if section.settings.show_titles and block.settings.title != blank -%}
+            <a
+              href="{{ cat_link }}"
+              class="vcat__title"
+              aria-hidden="true"
+              tabindex="-1"
+            >
+              {{- block.settings.title | escape -}}
+            </a>
+          {%- endif -%}
+        </div>
+
+      {%- endif -%}
+    {%- endfor -%}
+
+  </div>
+  {%- comment -%} ── END track ── {%- endcomment -%}
+
+  {%- comment -%} ── Mobile slider dots ── {%- endcomment -%}
+  {%- if section.settings.enable_mobile_slider and block_count > 1 -%}
+    <div class="vcat__dots" aria-hidden="true">
+      {%- for block in section.blocks -%}
+        {%- if block.type == 'category' -%}
+          <span
+            class="vcat__dot{% if forloop.first %} vcat__dot--active{% endif %}"
+            data-index="{{ forloop.index0 }}"
+          ></span>
+        {%- endif -%}
+      {%- endfor -%}
+    </div>
+  {%- endif -%}
+
+</section>
+
+
+{%- comment -%}======================== STYLES ========================{%- endcomment -%}
+<style>
+  /* ============================================================
+     VAPE CATEGORIES SECTION (vcat)
+     Prefix: .vcat
+  ============================================================ */
+
+  .vcat {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  /* ── Section heading ── */
+  .vcat__header {
+    text-align: center;
+    margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
+    padding-inline: var(--vape-page-padding, 1.5rem);
+  }
+
+  .vcat__heading {
+    margin: 0 0 0.5rem;
+    font-family: var(--vape-font-primary, var(--font-primary--family, sans-serif));
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    line-height: 1.15;
+    color: var(--vcat-title-color, #ffffff);
+  }
+
+  /* Heading size variants */
+  .vcat__heading--small  { font-size: clamp(1rem,    2vw,    1.25rem); }
+  .vcat__heading--medium { font-size: clamp(1.25rem, 2.5vw,  1.5rem);  }
+  .vcat__heading--large  { font-size: clamp(1.5rem,  3vw,    2rem);    }
+  .vcat__heading--xlarge { font-size: clamp(2rem,    3.5vw,  2.75rem); }
+
+  .vcat__subheading {
+    font-family: var(--vape-font-primary, var(--font-primary--family, sans-serif));
+    font-size: 0.9375rem;
+    line-height: 1.6;
+    margin: 0;
+    opacity: 0.7;
+  }
+
+  /* ── Cards track — desktop grid ── */
+  .vcat__track {
+    display: grid;
+    grid-template-columns: repeat(var(--vcat-cols-desktop, 6), 1fr);
+    gap: var(--vcat-gap, 20px);
+    padding-inline: var(--vape-page-padding, clamp(1.5rem, 5vw, 5rem));
+  }
+
+  /* ── Tablet: 3 columns ── */
+  @media (max-width: 989px) {
+    .vcat__track {
+      grid-template-columns: repeat(var(--vcat-cols-tablet, 3), 1fr);
+    }
+  }
+
+  /* ── Mobile: horizontal scroll / slider ── */
+  @media (max-width: 749px) {
+    .vcat__track {
+      display: flex;
+      flex-direction: row;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      gap: var(--vcat-gap, 16px);
+      padding-inline: var(--vape-page-padding, 1.25rem);
+      padding-bottom: 0.5rem;
+    }
+
+    .vcat__track::-webkit-scrollbar { display: none; }
+
+    .vcat__item {
+      flex: 0 0 calc(40% - var(--vcat-gap, 16px) / 2);
+      scroll-snap-align: start;
+    }
+  }
+
+  /* ── Category item wrapper ── */
+  .vcat__item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.625rem;
+  }
+
+  /* ── Coloured gradient card ── */
+  .vcat__card {
+    display: block;
+    position: relative;
+    width: 100%;
+    border-radius: var(--vcat-radius, 8px);
+    overflow: hidden;
+    text-decoration: none;
+    /* Square aspect ratio */
+    aspect-ratio: 1 / 1.1;
+    transition:
+      transform     0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+      box-shadow    0.3s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .vcat__card:hover {
+    transform: translateY(-6px) scale(1.02);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  }
+
+  .vcat__card:active {
+    transform: translateY(-2px) scale(1.005);
+  }
+
+  /* ── Product image wrapper ── */
+  .vcat__img-wrap {
+    position: absolute;
+    inset: var(--vcat-img-pad, 12%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vcat__img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    object-position: center;
+    /* Slight drop shadow makes PNGs pop on gradient bg */
+    filter: drop-shadow(0 8px 16px rgba(0, 0, 0, 0.28));
+    /* Subtle scale-in on hover */
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .vcat__card:hover .vcat__img {
+    transform: scale(1.06) translateY(-3px);
+  }
+
+  /* Placeholder */
+  .vcat__img-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.4;
+  }
+
+  .vcat__placeholder-svg {
+    width: 60%;
+    height: 60%;
+    color: rgba(255,255,255,0.7);
+  }
+
+  /* ── Category title text ── */
+  .vcat__title {
+    display: block;
+    font-family: var(--vape-font-primary, var(--font-primary--family, sans-serif));
+    font-size: var(--vcat-title-size, 13px);
+    font-weight: 500;
+    color: var(--vcat-title-color, rgba(255,255,255,0.85));
+    text-align: center;
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    line-height: 1.4;
+    transition: color 0.2s ease;
+    padding-inline: 0.25rem;
+  }
+
+  .vcat__title:hover {
+    color: var(--vape-white, #ffffff);
+    text-decoration: none;
+  }
+
+  /* ── Mobile slider dots indicator ── */
+  .vcat__dots {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    gap: 0.375rem;
+    margin-top: 1rem;
+    padding-inline: var(--vape-page-padding, 1.25rem);
+  }
+
+  @media (max-width: 749px) {
+    .vcat__dots { display: flex; }
+  }
+
+  .vcat__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.25);
+    transition: background 0.3s ease, transform 0.3s ease;
+    cursor: pointer;
+  }
+
+  .vcat__dot--active {
+    background: rgba(255,255,255,0.9);
+    transform: scale(1.4);
+  }
+</style>
+
+
+{%- comment -%}======================== JAVASCRIPT ========================{%- endcomment -%}
+<script>
+(function () {
+  'use strict';
+
+  /**
+   * VapeCategories
+   * Handles the mobile auto-sliding carousel behaviour.
+   * On desktop the section is a static CSS grid — no JS needed.
+   */
+  class VapeCategories {
+    constructor(root) {
+      this.root        = root;
+      this.track       = root.querySelector('.vcat__track');
+      this.dots        = Array.from(root.querySelectorAll('.vcat__dot'));
+      this.items       = Array.from(root.querySelectorAll('.vcat__item'));
+      this.total       = this.items.length;
+      this.current     = 0;
+      this.timer       = null;
+      this.isMobile    = false;
+
+      this.doAutoplay  = root.dataset.autoplay === 'true';
+      this.doSlider    = root.dataset.mobileSlider === 'true';
+      this.speed       = parseInt(root.dataset.autoplaySpeed, 10) || 3000;
+
+      if (this.total < 2 || !this.doSlider || !this.track) return;
+
+      this._bindEvents();
+      this._onResize();
+
+      /* Dot click */
+      this.dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+          this._stopAutoplay();
+          this._goTo(i);
+          if (this.doAutoplay) this._startAutoplay();
+        });
+      });
+    }
+
+    _bindEvents() {
+      window.addEventListener('resize', () => this._onResize(), { passive: true });
+
+      /* Pause on touch */
+      this.track.addEventListener('touchstart', () => this._stopAutoplay(), { passive: true });
+      this.track.addEventListener('touchend',   () => {
+        if (this.isMobile && this.doAutoplay) {
+          /* Short delay so snap finishes before we start auto again */
+          window.setTimeout(() => {
+            this._syncCurrentFromScroll();
+            this._startAutoplay();
+          }, 600);
+        }
+      }, { passive: true });
+
+      /* Sync dots when user manually scrolls */
+      this.track.addEventListener('scroll', () => {
+        if (this.isMobile) this._syncCurrentFromScroll();
+      }, { passive: true });
+
+      /* Theme editor */
+      document.addEventListener('shopify:section:load', () => {
+        this._stopAutoplay();
+        this._goTo(0);
+        if (this.isMobile && this.doAutoplay) this._startAutoplay();
+      });
+    }
+
+    _onResize() {
+      this.isMobile = window.innerWidth <= 749;
+      if (this.isMobile && this.doAutoplay) {
+        this._startAutoplay();
+      } else {
+        this._stopAutoplay();
+      }
+    }
+
+    _goTo(index) {
+      const target = ((index % this.total) + this.total) % this.total;
+      const item   = this.items[target];
+      if (!item) return;
+
+      this.track.scrollTo({
+        left:     item.offsetLeft - this.track.offsetLeft,
+        behavior: 'smooth'
+      });
+
+      /* Update dots */
+      this.dots[this.current]?.classList.remove('vcat__dot--active');
+      this.dots[target]?.classList.add('vcat__dot--active');
+      this.current = target;
+    }
+
+    _syncCurrentFromScroll() {
+      /* Find which item is most visible */
+      const trackLeft = this.track.scrollLeft;
+      let closest     = 0;
+      let minDist     = Infinity;
+
+      this.items.forEach((item, i) => {
+        const dist = Math.abs(item.offsetLeft - this.track.offsetLeft - trackLeft);
+        if (dist < minDist) { minDist = dist; closest = i; }
+      });
+
+      if (closest !== this.current) {
+        this.dots[this.current]?.classList.remove('vcat__dot--active');
+        this.dots[closest]?.classList.add('vcat__dot--active');
+        this.current = closest;
+      }
+    }
+
+    _startAutoplay() {
+      this._stopAutoplay();
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+      this.timer = window.setInterval(() => {
+        if (!this.isMobile) { this._stopAutoplay(); return; }
+        const next = (this.current + 1) % this.total;
+        this._goTo(next);
+      }, this.speed);
+    }
+
+    _stopAutoplay() {
+      if (this.timer) { window.clearInterval(this.timer); this.timer = null; }
+    }
+  }
+
+  /* Bootstrap */
+  function initAll() {
+    document.querySelectorAll('.vcat:not([data-vcat-ready])').forEach((el) => {
+      el.dataset.vcatReady = '1';
+      new VapeCategories(el);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll, { once: true });
+  } else {
+    initAll();
+  }
+
+  document.addEventListener('shopify:section:load', (e) => {
+    const section = e.target;
+    section?.querySelectorAll('.vcat').forEach((el) => {
+      delete el.dataset.vcatReady;
+    });
+    initAll();
+  });
+
+})();
+</script>
+
+
+{% schema %}
+{
+  "name": "Vape Categories",
+  "class": "section-vape-categories",
+  "tag": "div",
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section Heading"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading text",
+      "default": "Browse By Categories"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Heading HTML tag",
+      "options": [
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2 (recommended)" },
+        { "value": "h3", "label": "H3" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "options": [
+        { "value": "small",  "label": "Small"       },
+        { "value": "medium", "label": "Medium"      },
+        { "value": "large",  "label": "Large"       },
+        { "value": "xlarge", "label": "Extra large" }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading colour",
+      "default": "#111111"
+    },
+    {
+      "type": "text",
+      "id": "subheading",
+      "label": "Subheading (optional)",
+      "default": ""
+    },
+    {
+      "type": "color",
+      "id": "subheading_color",
+      "label": "Subheading colour",
+      "default": "#666666"
+    },
+    {
+      "type": "header",
+      "content": "Section Background"
+    },
+    {
+      "type": "color",
+      "id": "section_background",
+      "label": "Section background colour",
+      "default": "#ffffff"
+    },
+    {
+      "type": "header",
+      "content": "Grid Layout"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Columns — Desktop",
+      "min": 3,
+      "max": 8,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "range",
+      "id": "columns_tablet",
+      "label": "Columns — Tablet",
+      "min": 2,
+      "max": 4,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "card_gap",
+      "label": "Gap between cards",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Card Design"
+    },
+    {
+      "type": "range",
+      "id": "card_border_radius",
+      "label": "Card corner radius",
+      "min": 0,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "range",
+      "id": "image_padding",
+      "label": "Image padding (inside card)",
+      "min": 5,
+      "max": 30,
+      "step": 1,
+      "unit": "%",
+      "default": 12,
+      "info": "Controls how much whitespace surrounds the product image inside the card."
+    },
+    {
+      "type": "header",
+      "content": "Category Titles"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_titles",
+      "label": "Show category titles below cards",
+      "default": true
+    },
+    {
+      "type": "color",
+      "id": "title_color",
+      "label": "Title colour",
+      "default": "#222222"
+    },
+    {
+      "type": "range",
+      "id": "title_font_size",
+      "label": "Title font size",
+      "min": 10,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "default": 13
+    },
+    {
+      "type": "header",
+      "content": "Mobile Slider"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_mobile_slider",
+      "label": "Enable mobile slider",
+      "default": true,
+      "info": "On mobile, categories become a horizontal auto-sliding carousel."
+    },
+    {
+      "type": "checkbox",
+      "id": "mobile_autoplay",
+      "label": "Auto-play on mobile",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "mobile_autoplay_speed",
+      "label": "Auto-play interval",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "unit": "s",
+      "default": 3
+    },
+    {
+      "type": "header",
+      "content": "Section Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 60
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 60
+    }
+  ],
+  "blocks": [
+    {
+      "type": "category",
+      "name": "Category Card",
+      "settings": [
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Product image",
+          "info": "Use a PNG with transparent background for best results."
+        },
+        {
+          "type": "header",
+          "content": "Label & Link"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Category name",
+          "default": "E-Liquid"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "Link to collection"
+        },
+        {
+          "type": "header",
+          "content": "Card Background Gradient"
+        },
+        {
+          "type": "color",
+          "id": "bg_color_start",
+          "label": "Gradient — start colour",
+          "default": "#f59e0b"
+        },
+        {
+          "type": "color",
+          "id": "bg_color_end",
+          "label": "Gradient — end colour",
+          "default": "#f97316"
+        },
+        {
+          "type": "select",
+          "id": "gradient_angle",
+          "label": "Gradient direction",
+          "options": [
+            { "value": "0",   "label": "Top → Bottom"        },
+            { "value": "45",  "label": "Top-left → Bottom-right" },
+            { "value": "90",  "label": "Left → Right"         },
+            { "value": "135", "label": "Top-right → Bottom-left" },
+            { "value": "180", "label": "Bottom → Top"         }
+          ],
+          "default": "135"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Categories",
+      "category": "Image",
+      "blocks": [
+        {
+          "type": "category",
+          "settings": {
+            "title": "E-Liquid",
+            "bg_color_start": "#f59e0b",
+            "bg_color_end": "#f97316",
+            "gradient_angle": "135"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Vape Pen",
+            "bg_color_start": "#10b981",
+            "bg_color_end": "#14b8a6",
+            "gradient_angle": "135"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Vape Mods",
+            "bg_color_start": "#ec4899",
+            "bg_color_end": "#f43f5e",
+            "gradient_angle": "135"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Pods",
+            "bg_color_start": "#3b82f6",
+            "bg_color_end": "#06b6d4",
+            "gradient_angle": "135"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Tank Vape",
+            "bg_color_start": "#eab308",
+            "bg_color_end": "#84cc16",
+            "gradient_angle": "135"
+          }
+        },
+        {
+          "type": "category",
+          "settings": {
+            "title": "Coils",
+            "bg_color_start": "#ef4444",
+            "bg_color_end": "#ec4899",
+            "gradient_angle": "135"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

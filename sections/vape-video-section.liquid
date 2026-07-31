@@ -1,0 +1,729 @@
+{%- comment -%}
+  ============================================================
+  Vape Video Section — sections/vape-video-section.liquid
+
+  Matches reference design:
+  • Full / page-width thumbnail image with dark overlay
+  • Centred white circular play button with pulse ring animation
+  • Two video source options (Theme Customizer):
+      1. External URL → YouTube or Vimeo (auto-embed)
+      2. Shopify-hosted video file (native <video> element)
+  • Click → lightbox modal OR inline player (configurable)
+  • Responsive: works on all screen sizes
+  • All settings accessible in the Theme Customizer
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign has_video_url  = false
+  assign has_video_file = false
+  assign embed_src      = ''
+
+  if section.settings.video_url != blank
+    assign has_video_url = true
+    assign vid_type = section.settings.video_url.type
+    assign vid_id   = section.settings.video_url.id
+    if vid_type == 'youtube'
+      assign embed_src = 'https://www.youtube.com/embed/' | append: vid_id | append: '?autoplay=1&rel=0&modestbranding=1'
+    elsif vid_type == 'vimeo'
+      assign embed_src = 'https://player.vimeo.com/video/' | append: vid_id | append: '?autoplay=1&dnt=1'
+    endif
+  endif
+
+  if section.settings.video != blank
+    assign has_video_file = true
+  endif
+
+  assign has_any_video = has_video_url | default: has_video_file
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    padding-block-start: {{ section.settings.padding_top }}px;
+    padding-block-end: {{ section.settings.padding_bottom }}px;
+    background: {{ section.settings.section_bg }};
+  }
+
+  #vvs-{{ section.id }} {
+    --vvs-height:         {{ section.settings.section_height }};
+    --vvs-radius:         {{ section.settings.border_radius }}px;
+    --vvs-overlay:        {{ section.settings.overlay_opacity | times: 0.01 }};
+    --vvs-btn-size:       {{ section.settings.play_btn_size }}px;
+  }
+{% endstyle %}
+
+<div
+  id="vvs-{{ section.id }}"
+  class="vvs{% if section.settings.full_width %} vvs--full{% else %} page-width{% endif %}"
+  data-lightbox="{{ section.settings.use_lightbox }}"
+  data-embed-src="{{ embed_src | escape }}"
+  data-has-url="{{ has_video_url }}"
+  data-has-file="{{ has_video_file }}"
+>
+
+  {%- comment -%} ── Thumbnail Container ── {%- endcomment -%}
+  <div class="vvs-thumb" id="vvs-thumb-{{ section.id }}">
+
+    {%- comment -%} Background Image ── {%- endcomment -%}
+    {%- if section.settings.thumbnail != blank -%}
+      {{ section.settings.thumbnail
+        | image_url: width: 2000
+        | image_tag:
+          loading: 'eager',
+          class: 'vvs-bg-img',
+          widths: '750, 1100, 1500, 2000',
+          sizes: '100vw',
+          alt: section.settings.thumbnail.alt | default: 'Video thumbnail' | escape
+      }}
+    {%- else -%}
+      <div class="vvs-bg-placeholder"></div>
+    {%- endif -%}
+
+    {%- comment -%} Dark overlay ── {%- endcomment -%}
+    <div class="vvs-overlay" aria-hidden="true"></div>
+
+    {%- comment -%} Centred play button ── {%- endcomment -%}
+    {%- if has_video_url or has_video_file -%}
+      <button
+        type="button"
+        class="vvs-play-btn"
+        id="vvs-play-{{ section.id }}"
+        aria-label="{{ section.settings.play_label | default: 'Play video' | escape }}"
+      >
+        <svg class="vvs-play-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <polygon points="6,3 20,12 6,21" fill="#111111"/>
+        </svg>
+      </button>
+    {%- endif -%}
+
+    {%- comment -%} Optional caption overlay text ── {%- endcomment -%}
+    {%- if section.settings.caption != blank or section.settings.caption_subtext != blank -%}
+      <div class="vvs-caption vvs-caption--{{ section.settings.caption_position }}">
+        {%- if section.settings.caption != blank -%}
+          <p class="vvs-caption-text">{{ section.settings.caption | escape }}</p>
+        {%- endif -%}
+        {%- if section.settings.caption_subtext != blank -%}
+          <p class="vvs-caption-sub">{{ section.settings.caption_subtext | escape }}</p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+  </div>
+  {%- comment -%} ── END Thumbnail ── {%- endcomment -%}
+
+  {%- comment -%} ── Inline player (shown when not lightbox + hosted video) ── {%- endcomment -%}
+  {%- if has_video_file -%}
+    <div class="vvs-inline-player" id="vvs-inline-{{ section.id }}" hidden aria-hidden="true">
+      {{ section.settings.video | video_tag:
+        autoplay: true,
+        loop: section.settings.video_loop,
+        muted: false,
+        controls: true,
+        class: 'vvs-inline-video'
+      }}
+    </div>
+  {%- endif -%}
+
+</div>
+
+{%- comment -%} ── Lightbox modal (global, outside section container) ── {%- endcomment -%}
+<div
+  class="vvs-lightbox"
+  id="vvs-lightbox-{{ section.id }}"
+  role="dialog"
+  aria-modal="true"
+  aria-label="{{ section.settings.play_label | default: 'Video player' | escape }}"
+  aria-hidden="true"
+>
+  <div class="vvs-lightbox-backdrop" data-close-lbox></div>
+
+  <div class="vvs-lightbox-dialog">
+    <button type="button" class="vvs-lightbox-close" data-close-lbox aria-label="Close video">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+        <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+      </svg>
+    </button>
+
+    <div class="vvs-lightbox-media" id="vvs-lbox-media-{{ section.id }}">
+      {%- comment -%} iframe / video injected by JS {%- endcomment -%}
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     VAPE VIDEO SECTION (vvs) STYLES
+  ============================================================ */
+
+  /* ── Section wrapper ── */
+  .vvs {
+    width: 100%;
+  }
+
+  .vvs--full {
+    max-width: 100%;
+  }
+
+  /* ── Thumbnail container ── */
+  .vvs-thumb {
+    position: relative;
+    width: 100%;
+    height: var(--vvs-height, 500px);
+    border-radius: var(--vvs-radius, 0px);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
+  /* ── Background image ── */
+  .vvs-bg-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    transition: transform 0.6s ease;
+  }
+
+  .vvs-thumb:hover .vvs-bg-img {
+    transform: scale(1.025);
+  }
+
+  /* Placeholder when no image */
+  .vvs-bg-placeholder {
+    position: absolute;
+    inset: 0;
+    background: #0d0d1a;
+  }
+
+  /* ── Dark overlay ── */
+  .vvs-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, var(--vvs-overlay, 0.3));
+    z-index: 1;
+    pointer-events: none;
+    transition: background 0.3s ease;
+  }
+
+  .vvs-thumb:hover .vvs-overlay {
+    background: rgba(0, 0, 0, calc(var(--vvs-overlay, 0.3) + 0.1));
+  }
+
+  /* ── Play button ── */
+  .vvs-play-btn {
+    position: relative;
+    z-index: 3;
+    width: var(--vvs-btn-size, 80px);
+    height: var(--vvs-btn-size, 80px);
+    border-radius: 50%;
+    background: #ffffff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+    /* Pulse ring animation */
+    animation: vvsPulse 2.8s ease-in-out infinite;
+  }
+
+  .vvs-play-btn:hover {
+    transform: scale(1.12);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+    animation-play-state: paused;
+  }
+
+  .vvs-play-btn:active {
+    transform: scale(0.97);
+  }
+
+  /* Play icon — offset right slightly so it looks centred visually */
+  .vvs-play-icon {
+    width: 38%;
+    height: 38%;
+    margin-left: 4px;
+    pointer-events: none;
+  }
+
+  /* Pulse ring keyframes */
+  @keyframes vvsPulse {
+    0%, 100% {
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.35),
+        0 0 0 0   rgba(255,255,255,0.6);
+    }
+    50% {
+      box-shadow:
+        0 8px 32px rgba(0,0,0,0.35),
+        0 0 0 18px rgba(255,255,255,0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .vvs-play-btn { animation: none; }
+  }
+
+  /* ── Optional caption overlay ── */
+  .vvs-caption {
+    position: absolute;
+    z-index: 4;
+    padding: 1.5rem 2rem;
+  }
+
+  .vvs-caption--bottom-left  { bottom: 0; left: 0; }
+  .vvs-caption--bottom-right { bottom: 0; right: 0; text-align: right; }
+  .vvs-caption--top-left     { top: 0; left: 0; }
+  .vvs-caption--center       { top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; }
+
+  .vvs-caption-text {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    font-weight: 800;
+    color: #ffffff;
+    margin: 0 0 0.5rem;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .vvs-caption-sub {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: 0.9rem;
+    color: rgba(255,255,255,0.8);
+    margin: 0;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.35);
+  }
+
+  /* ── Inline video player ── */
+  .vvs-inline-player {
+    position: absolute;
+    inset: 0;
+    z-index: 10;
+    background: #000;
+    border-radius: var(--vvs-radius, 0px);
+    overflow: hidden;
+  }
+
+  .vvs-inline-video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* ============================================================
+     LIGHTBOX MODAL
+  ============================================================ */
+  .vvs-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .vvs-lightbox.is-open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* Backdrop */
+  .vvs-lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    cursor: pointer;
+  }
+
+  /* Dialog */
+  .vvs-lightbox-dialog {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    max-width: 960px;
+    background: #000;
+    border-radius: 10px;
+    overflow: hidden;
+    transform: scale(0.92) translateY(16px);
+    transition: transform 0.35s cubic-bezier(0.34, 1.4, 0.64, 1);
+    box-shadow: 0 30px 80px rgba(0, 0, 0, 0.7);
+  }
+
+  .vvs-lightbox.is-open .vvs-lightbox-dialog {
+    transform: scale(1) translateY(0);
+  }
+
+  /* Responsive 16:9 aspect ratio container */
+  .vvs-lightbox-media {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+  }
+
+  .vvs-lightbox-media iframe,
+  .vvs-lightbox-media video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  /* Close button */
+  .vvs-lightbox-close {
+    position: absolute;
+    top: -48px;
+    right: 0;
+    z-index: 10;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.15);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    color: #ffffff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .vvs-lightbox-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: scale(1.1);
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 749px) {
+    .vvs-thumb {
+      height: clamp(250px, 60vw, 420px);
+    }
+
+    .vvs-lightbox-close {
+      top: -44px;
+      width: 32px;
+      height: 32px;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  function initVapeVideoSection(wrap) {
+    const thumb        = wrap.querySelector('.vvs-thumb');
+    const playBtn      = wrap.querySelector('.vvs-play-btn');
+    const lightbox     = wrap.parentElement?.querySelector('.vvs-lightbox') ||
+                         document.getElementById('vvs-lightbox-' + wrap.id.replace('vvs-', ''));
+    const inlinePlayer = wrap.querySelector('.vvs-inline-player');
+    const lboxMedia    = lightbox?.querySelector('.vvs-lightbox-media');
+
+    const useLightbox  = wrap.dataset.lightbox !== 'false';
+    const embedSrc     = wrap.dataset.embedSrc || '';
+    const hasUrl       = wrap.dataset.hasUrl === 'true';
+    const hasFile      = wrap.dataset.hasFile === 'true';
+
+    if (!playBtn) return;
+
+    /* ── Open / play logic ── */
+    function openVideo() {
+      if (useLightbox && lightbox) {
+        // Inject iframe or video into lightbox
+        if (hasUrl && embedSrc && lboxMedia) {
+          lboxMedia.innerHTML = `<iframe
+            src="${embedSrc}"
+            allow="autoplay; fullscreen; picture-in-picture"
+            allowfullscreen
+            title="Video player"
+          ></iframe>`;
+        } else if (hasFile && inlinePlayer && lboxMedia) {
+          // Clone the hosted video into lightbox
+          const vid = inlinePlayer.querySelector('video');
+          if (vid) {
+            const clone = vid.cloneNode(true);
+            clone.setAttribute('autoplay', '');
+            lboxMedia.innerHTML = '';
+            lboxMedia.appendChild(clone);
+          }
+        }
+        openLightbox();
+      } else {
+        // Inline mode
+        if (inlinePlayer) {
+          thumb.style.display = 'none';
+          inlinePlayer.hidden = false;
+          inlinePlayer.removeAttribute('aria-hidden');
+          const v = inlinePlayer.querySelector('video');
+          if (v) v.play();
+        }
+      }
+    }
+
+    if (thumb)    thumb.addEventListener('click', openVideo);
+    if (playBtn)  playBtn.addEventListener('click', (e) => { e.stopPropagation(); openVideo(); });
+
+    /* ── Lightbox helpers ── */
+    function openLightbox() {
+      if (!lightbox) return;
+      lightbox.classList.add('is-open');
+      lightbox.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+
+      // Focus close btn for accessibility
+      setTimeout(() => {
+        lightbox.querySelector('.vvs-lightbox-close')?.focus();
+      }, 350);
+    }
+
+    function closeLightbox() {
+      if (!lightbox) return;
+      lightbox.classList.remove('is-open');
+      lightbox.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+
+      // Clear media to stop video / audio
+      setTimeout(() => {
+        if (lboxMedia) lboxMedia.innerHTML = '';
+      }, 320);
+    }
+
+    // Close triggers
+    if (lightbox) {
+      lightbox.querySelectorAll('[data-close-lbox]').forEach(el => {
+        el.addEventListener('click', closeLightbox);
+      });
+
+      // ESC key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && lightbox.classList.contains('is-open')) closeLightbox();
+      });
+    }
+  }
+
+  function setupAll() {
+    document.querySelectorAll('[id^="vvs-"]:not([data-vvs-ready])').forEach((el) => {
+      if (!el.classList.contains('vvs')) return;
+      el.dataset.vvsReady = '1';
+      initVapeVideoSection(el);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupAll);
+  } else {
+    setupAll();
+  }
+
+  document.addEventListener('shopify:section:load', setupAll);
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Vape Video Section",
+  "class": "section-vape-video",
+  "tag": "div",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Thumbnail Image"
+    },
+    {
+      "type": "image_picker",
+      "id": "thumbnail",
+      "label": "Thumbnail / Poster Image",
+      "info": "This image is shown before the video plays. Use a high-resolution landscape image for best results."
+    },
+    {
+      "type": "header",
+      "content": "Video Source"
+    },
+    {
+      "type": "paragraph",
+      "content": "Set either a YouTube / Vimeo link OR upload a Shopify-hosted video file. If both are set, the hosted file takes priority in inline mode."
+    },
+    {
+      "type": "video_url",
+      "id": "video_url",
+      "label": "YouTube or Vimeo URL",
+      "accept": ["youtube", "vimeo"],
+      "info": "Paste the full YouTube or Vimeo URL (e.g. https://www.youtube.com/watch?v=XXXXX)."
+    },
+    {
+      "type": "video",
+      "id": "video",
+      "label": "Shopify-hosted video (upload)",
+      "info": "Upload an MP4 / MOV / WebM file directly to your Shopify Files. This plays natively without an external embed."
+    },
+    {
+      "type": "checkbox",
+      "id": "video_loop",
+      "label": "Loop video (hosted file only)",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Play Behaviour"
+    },
+    {
+      "type": "checkbox",
+      "id": "use_lightbox",
+      "label": "Play video in lightbox modal",
+      "default": true,
+      "info": "When enabled, clicking the play button opens a popup modal. When disabled, the video replaces the thumbnail inline."
+    },
+    {
+      "type": "text",
+      "id": "play_label",
+      "label": "Play button accessibility label",
+      "default": "Play video"
+    },
+    {
+      "type": "header",
+      "content": "Play Button"
+    },
+    {
+      "type": "range",
+      "id": "play_btn_size",
+      "label": "Play button size",
+      "min": 56,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "header",
+      "content": "Optional Caption Text"
+    },
+    {
+      "type": "text",
+      "id": "caption",
+      "label": "Caption heading",
+      "info": "Optional bold text overlay on the thumbnail (leave blank to hide)."
+    },
+    {
+      "type": "text",
+      "id": "caption_subtext",
+      "label": "Caption subtext"
+    },
+    {
+      "type": "select",
+      "id": "caption_position",
+      "label": "Caption position",
+      "options": [
+        { "value": "bottom-left",  "label": "Bottom left"  },
+        { "value": "bottom-right", "label": "Bottom right" },
+        { "value": "top-left",     "label": "Top left"     },
+        { "value": "center",       "label": "Centered"     }
+      ],
+      "default": "bottom-left"
+    },
+    {
+      "type": "header",
+      "content": "Section Dimensions & Styling"
+    },
+    {
+      "type": "select",
+      "id": "section_height",
+      "label": "Section height",
+      "options": [
+        { "value": "350px",  "label": "Small (350px)"       },
+        { "value": "420px",  "label": "Medium (420px)"      },
+        { "value": "500px",  "label": "Large (500px)"       },
+        { "value": "580px",  "label": "Extra Large (580px)" },
+        { "value": "60vh",   "label": "60% viewport height" },
+        { "value": "70vh",   "label": "70% viewport height" },
+        { "value": "85vh",   "label": "85% viewport height" },
+        { "value": "100dvh", "label": "Full screen"         }
+      ],
+      "default": "500px"
+    },
+    {
+      "type": "checkbox",
+      "id": "full_width",
+      "label": "Full width (edge to edge)",
+      "default": true,
+      "info": "When enabled, the section stretches to the full browser width. When disabled, it follows the page content width."
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Card corner radius",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "Image overlay darkness",
+      "min": 0,
+      "max": 80,
+      "step": 5,
+      "unit": "%",
+      "default": 30,
+      "info": "Dark overlay on top of the thumbnail image. 0 = no overlay, 80 = very dark."
+    },
+    {
+      "type": "header",
+      "content": "Section Background & Spacing"
+    },
+    {
+      "type": "color",
+      "id": "section_bg",
+      "label": "Section background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding top",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding bottom",
+      "min": 0,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Video Section",
+      "category": "Media",
+      "settings": {
+        "use_lightbox": true,
+        "full_width": true,
+        "section_height": "500px",
+        "overlay_opacity": 30,
+        "play_btn_size": 80
+      }
+    }
+  ]
+}
+{% endschema %}

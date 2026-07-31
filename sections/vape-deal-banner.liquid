@@ -1,0 +1,637 @@
+{%- comment -%}
+  ============================================================
+  Vape Deal Banner — sections/vape-deal-banner.liquid
+
+  Promotional banner with live countdown timer and interactive 
+  animated product image hover effect matching the reference design.
+  • Dynamic Shopify Product picker or custom images
+  • Live countdown timer (Days, Hours, Minutes, Seconds)
+  • Smooth 3D tilt & float mouse hover animation on product images
+  • Responsive flex/grid container with theme customizer settings
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign featured_product = section.settings.product
+  assign banner_heading = section.settings.heading | default: featured_product.title | default: "ENHANCE YOUR VAPING EXPERIENCE"
+  assign banner_link = section.settings.button_url | default: featured_product.url | default: "#"
+  
+  assign img_1 = section.settings.image_1 | default: featured_product.featured_image
+  assign img_2 = section.settings.image_2 | default: featured_product.images[1]
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    padding-block-start: {{ section.settings.padding_top }}px;
+    padding-block-end: {{ section.settings.padding_bottom }}px;
+    background-color: {{ section.settings.section_bg_color }};
+  }
+
+  #vdb-{{ section.id }} {
+    --vdb-bg: {{ section.settings.card_bg_color }};
+    --vdb-text: {{ section.settings.text_color }};
+    --vdb-heading-color: {{ section.settings.heading_color }};
+    --vdb-btn-bg: {{ section.settings.btn_bg_color }};
+    --vdb-btn-text: {{ section.settings.btn_text_color }};
+    --vdb-radius: {{ section.settings.border_radius }}px;
+  }
+{% endstyle %}
+
+<div id="vdb-{{ section.id }}" class="vdb-container page-width">
+  <div class="vdb-card">
+    
+    {%- comment -%} Left Column: Content & Countdown {%- endcomment -%}
+    <div class="vdb-content">
+      {%- if banner_heading != blank -%}
+        <h2 class="vdb-heading vdb-heading--{{ section.settings.heading_size }}">
+          {{ banner_heading | escape }}
+        </h2>
+      {%- endif -%}
+
+      {%- if section.settings.subheading != blank -%}
+        <div class="vdb-subheading">
+          {{ section.settings.subheading }}
+        </div>
+      {%- endif -%}
+
+      {%- if section.settings.show_countdown -%}
+        <div 
+          class="vdb-countdown"
+          data-target-date="{{ section.settings.countdown_end_date | default: '2026-12-31T23:59:59' }}"
+        >
+          <div class="vdb-timer-box">
+            <span class="vdb-timer-value" data-days>00</span>
+            <span class="vdb-timer-label">Days</span>
+          </div>
+          <div class="vdb-timer-box">
+            <span class="vdb-timer-value" data-hours>00</span>
+            <span class="vdb-timer-label">Hours</span>
+          </div>
+          <div class="vdb-timer-box">
+            <span class="vdb-timer-value" data-minutes>00</span>
+            <span class="vdb-timer-label">Minutes</span>
+          </div>
+          <div class="vdb-timer-box">
+            <span class="vdb-timer-value" data-seconds>00</span>
+            <span class="vdb-timer-label">Seconds</span>
+          </div>
+        </div>
+      {%- endif -%}
+
+      {%- if section.settings.button_text != blank -%}
+        <div class="vdb-btn-wrapper">
+          <a href="{{ banner_link }}" class="vdb-btn">
+            {{ section.settings.button_text | escape }}
+          </a>
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%} Right Column: Floating Product Images {%- endcomment -%}
+    <div class="vdb-media-wrapper {% if section.settings.enable_hover_animation %}vdb-media-interactive{% endif %}" id="vdb-media-{{ section.id }}">
+      <div class="vdb-media-inner">
+        {%- if img_1 != blank -%}
+          <div class="vdb-img-holder vdb-img-1">
+            {{ img_1 | image_url: width: 600 | image_tag: 
+              loading: 'lazy', 
+              class: 'vdb-img',
+              widths: '300, 450, 600',
+              alt: img_1.alt | default: banner_heading | escape 
+            }}
+          </div>
+        {%- endif -%}
+
+        {%- if img_2 != blank -%}
+          <div class="vdb-img-holder vdb-img-2">
+            {{ img_2 | image_url: width: 700 | image_tag: 
+              loading: 'lazy', 
+              class: 'vdb-img',
+              widths: '350, 500, 700',
+              alt: img_2.alt | default: banner_heading | escape 
+            }}
+          </div>
+        {%- endif -%}
+
+        {%- if img_1 == blank and img_2 == blank -%}
+          <div class="vdb-img-holder vdb-img-placeholder">
+            {{ 'product-1' | placeholder_svg_tag: 'vdb-placeholder-svg' }}
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     VAPE DEAL BANNER (vdb) CSS
+  ============================================================ */
+
+  .vdb-container {
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  .vdb-card {
+    background-color: var(--vdb-bg, #f4f6f8);
+    border-radius: var(--vdb-radius, 12px);
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    padding: clamp(2rem, 5vw, 4rem) clamp(2rem, 6vw, 5rem);
+    min-height: 420px;
+    position: relative;
+    overflow: hidden;
+    gap: 2rem;
+  }
+
+  /* ── Content Side ── */
+  .vdb-content {
+    flex: 1 1 50%;
+    max-width: 540px;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .vdb-heading {
+    margin: 0;
+    font-family: var(--vape-font-primary, sans-serif);
+    font-weight: 900;
+    text-transform: uppercase;
+    line-height: 1.15;
+    letter-spacing: 0.04em;
+    color: var(--vdb-heading-color, #111111);
+  }
+
+  .vdb-heading--small { font-size: clamp(1.5rem, 3vw, 2rem); }
+  .vdb-heading--medium { font-size: clamp(1.75rem, 3.5vw, 2.5rem); }
+  .vdb-heading--large { font-size: clamp(2.25rem, 4vw, 3.25rem); }
+
+  .vdb-subheading {
+    color: var(--vdb-text, #555555);
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  /* ── Countdown Timer ── */
+  .vdb-countdown {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-block: 0.5rem;
+  }
+
+  .vdb-timer-box {
+    background: #ffffff;
+    border-radius: 4px;
+    padding: 0.75rem 1rem;
+    min-width: 68px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vdb-timer-value {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: 1.35rem;
+    font-weight: 800;
+    color: #111111;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+  }
+
+  .vdb-timer-label {
+    font-size: 0.6875rem;
+    color: #777777;
+    text-transform: capitalize;
+    font-weight: 500;
+  }
+
+  /* ── Button ── */
+  .vdb-btn-wrapper {
+    margin-top: 0.5rem;
+  }
+
+  .vdb-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--vdb-btn-bg, #cc0000);
+    color: var(--vdb-btn-text, #ffffff);
+    padding: 0.875rem 2.25rem;
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.25s ease, background-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .vdb-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(204, 0, 0, 0.3);
+  }
+
+  /* ── Media Side (Interactive Hover Animation) ── */
+  .vdb-media-wrapper {
+    flex: 1 1 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    height: 100%;
+    min-height: 320px;
+    perspective: 1000px;
+  }
+
+  .vdb-media-inner {
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    gap: 1.5rem;
+    position: relative;
+    width: 100%;
+    max-width: 460px;
+    transition: transform 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    transform-style: preserve-3d;
+  }
+
+  .vdb-img-holder {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+  }
+
+  .vdb-img-1 {
+    width: 38%;
+    z-index: 1;
+  }
+
+  .vdb-img-2 {
+    width: 52%;
+    z-index: 2;
+  }
+
+  .vdb-img {
+    width: 100%;
+    height: auto;
+    max-height: 360px;
+    object-fit: contain;
+    filter: drop-shadow(0 15px 25px rgba(0, 0, 0, 0.2));
+  }
+
+  /* Hover float & tilt animation effect */
+  .vdb-media-interactive:hover .vdb-img-1 {
+    transform: translateY(-12px) rotate(-3deg) scale(1.04);
+    filter: drop-shadow(0 22px 30px rgba(0, 0, 0, 0.28));
+  }
+
+  .vdb-media-interactive:hover .vdb-img-2 {
+    transform: translateY(-18px) rotate(2deg) scale(1.06);
+    filter: drop-shadow(0 25px 35px rgba(0, 0, 0, 0.32));
+  }
+
+  /* Floating keyframe animation (subtle continuous float) */
+  @keyframes vdbFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  .vdb-media-interactive .vdb-media-inner {
+    animation: vdbFloat 4s ease-in-out infinite;
+  }
+
+  .vdb-media-interactive:hover .vdb-media-inner {
+    animation-play-state: paused;
+  }
+
+  /* Placeholder SVG */
+  .vdb-img-placeholder {
+    width: 100%;
+    height: 280px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vdb-placeholder-svg {
+    width: 60%;
+    height: 60%;
+    opacity: 0.3;
+  }
+
+  /* ── Mobile Responsiveness ── */
+  @media (max-width: 890px) {
+    .vdb-card {
+      flex-direction: column;
+      text-align: center;
+      padding: 2.5rem 1.5rem;
+    }
+
+    .vdb-content {
+      align-items: center;
+      max-width: 100%;
+    }
+
+    .vdb-countdown {
+      justify-content: center;
+    }
+
+    .vdb-media-wrapper {
+      width: 100%;
+      min-height: 260px;
+    }
+
+    .vdb-img {
+      max-height: 280px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .vdb-timer-box {
+      padding: 0.5rem 0.75rem;
+      min-width: 54px;
+    }
+
+    .vdb-timer-value {
+      font-size: 1.1rem;
+    }
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  function initVapeDealBanner(section) {
+    /* 1. Countdown Timer Logic */
+    const countdownEl = section.querySelector('.vdb-countdown');
+    if (countdownEl) {
+      const targetDateStr = countdownEl.dataset.targetDate;
+      let targetTime = new Date(targetDateStr).getTime();
+
+      /* Fallback if date is invalid: set 3 days from now */
+      if (isNaN(targetTime)) {
+        targetTime = new Date().getTime() + (3 * 24 * 60 * 60 * 1000);
+      }
+
+      const daysEl = countdownEl.querySelector('[data-days]');
+      const hoursEl = countdownEl.querySelector('[data-hours]');
+      const minsEl = countdownEl.querySelector('[data-minutes]');
+      const secsEl = countdownEl.querySelector('[data-seconds]');
+
+      function updateTimer() {
+        const now = new Date().getTime();
+        const diff = targetTime - now;
+
+        if (diff <= 0) {
+          if (daysEl) daysEl.textContent = "00";
+          if (hoursEl) hoursEl.textContent = "00";
+          if (minsEl) minsEl.textContent = "00";
+          if (secsEl) secsEl.textContent = "00";
+          return;
+        }
+
+        const d = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const h = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const m = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        const s = Math.floor((diff % (1000 * 60)) / 1000);
+
+        if (daysEl) daysEl.textContent = d < 10 ? '0' + d : d;
+        if (hoursEl) hoursEl.textContent = h < 10 ? '0' + h : h;
+        if (minsEl) minsEl.textContent = m < 10 ? '0' + m : m;
+        if (secsEl) secsEl.textContent = s < 10 ? '0' + s : s;
+      }
+
+      updateTimer();
+      setInterval(updateTimer, 1000);
+    }
+
+    /* 2. Interactive Parallax Mouse Move Animation */
+    const mediaWrapper = section.querySelector('.vdb-media-interactive');
+    const mediaInner = section.querySelector('.vdb-media-inner');
+
+    if (mediaWrapper && mediaInner) {
+      mediaWrapper.addEventListener('mousemove', (e) => {
+        const rect = mediaWrapper.getBoundingClientRect();
+        const x = e.clientX - rect.left - (rect.width / 2);
+        const y = e.clientY - rect.top - (rect.height / 2);
+
+        const tiltX = (y / (rect.height / 2)) * -12;
+        const tiltY = (x / (rect.width / 2)) * 12;
+
+        mediaInner.style.transform = `rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+      });
+
+      mediaWrapper.addEventListener('mouseleave', () => {
+        mediaInner.style.transform = 'rotateX(0deg) rotateY(0deg)';
+      });
+    }
+  }
+
+  function setupBanners() {
+    document.querySelectorAll('.section-vape-deal-banner').forEach(initVapeDealBanner);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupBanners);
+  } else {
+    setupBanners();
+  }
+
+  document.addEventListener('shopify:section:load', function (e) {
+    if (e.target.classList.contains('section-vape-deal-banner')) {
+      initVapeDealBanner(e.target);
+    }
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Vape Deal Banner",
+  "class": "section-vape-deal-banner",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Product Selection"
+    },
+    {
+      "type": "product",
+      "id": "product",
+      "label": "Select Featured Product",
+      "info": "Selecting a product auto-populates the title, link, and images if custom fields are blank."
+    },
+    {
+      "type": "header",
+      "content": "Banner Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "ENHANCE YOUR VAPING EXPERIENCE"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading Size",
+      "options": [
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "medium"
+    },
+    {
+      "type": "richtext",
+      "id": "subheading",
+      "label": "Subheading (optional)"
+    },
+    {
+      "type": "text",
+      "id": "button_text",
+      "label": "Button Text",
+      "default": "SHOP NOW"
+    },
+    {
+      "type": "url",
+      "id": "button_url",
+      "label": "Button Link",
+      "info": "If left empty, links to selected product."
+    },
+    {
+      "type": "header",
+      "content": "Countdown Timer"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_countdown",
+      "label": "Show Countdown Timer",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "countdown_end_date",
+      "label": "Target End Date (ISO Format)",
+      "default": "2026-12-31T23:59:59",
+      "info": "Format: YYYY-MM-DDTHH:MM:SS (e.g., 2026-12-31T23:59:59)"
+    },
+    {
+      "type": "header",
+      "content": "Product Images & Animation"
+    },
+    {
+      "type": "image_picker",
+      "id": "image_1",
+      "label": "Primary Vape Image (Left)",
+      "info": "PNG transparent image recommended."
+    },
+    {
+      "type": "image_picker",
+      "id": "image_2",
+      "label": "Secondary Vape Image (Right)",
+      "info": "PNG transparent image recommended."
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_hover_animation",
+      "label": "Enable Mouse Float & Parallax Hover Animation",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Colors & Styling"
+    },
+    {
+      "type": "color",
+      "id": "card_bg_color",
+      "label": "Card Background Color",
+      "default": "#f4f6f8"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading Text Color",
+      "default": "#111111"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Body Text Color",
+      "default": "#555555"
+    },
+    {
+      "type": "color",
+      "id": "btn_bg_color",
+      "label": "Button Background Color",
+      "default": "#cc0000"
+    },
+    {
+      "type": "color",
+      "id": "btn_text_color",
+      "label": "Button Text Color",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "section_bg_color",
+      "label": "Outer Section Background",
+      "default": "#080808"
+    },
+    {
+      "type": "range",
+      "id": "border_radius",
+      "label": "Card Corner Radius",
+      "min": 0,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Section Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding Top",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding Bottom",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 40
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Deal Banner",
+      "category": "Promotional"
+    }
+  ]
+}
+{% endschema %}

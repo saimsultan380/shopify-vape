@@ -1,0 +1,74 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
+{
+  "sections": {
+    "main": {
+      "type": "vape-collection",
+      "blocks": {
+        "service_1": {
+          "type": "service",
+          "settings": {
+            "icon": "truck",
+            "title": "Free Us Delivery",
+            "text": "For US Order (including Alaska and Hawaii) or orders over $200"
+          }
+        },
+        "service_2": {
+          "type": "service",
+          "settings": {
+            "icon": "shield",
+            "title": "Secure Payment",
+            "text": "We accept Visa, American Express, Paypal, Payoneer Mastercard and Discover"
+          }
+        },
+        "service_3": {
+          "type": "service",
+          "settings": {
+            "icon": "headset",
+            "title": "Support 24/7",
+            "text": "Contact us 24 hours a day, 7 days a week. Call Us: 0123-456-789"
+          }
+        }
+      },
+      "block_order": [
+        "service_1",
+        "service_2",
+        "service_3"
+      ],
+      "settings": {
+        "banner_bg": "#f0f0f0",
+        "categories_visible": 5,
+        "sidebar_width": 260,
+        "products_per_page": 12,
+        "show_tags": true,
+        "accent_color": "#e53935"
+      }
+    },
+    "recently_viewed": {
+      "type": "vape-recently-viewed",
+      "settings": {
+        "heading": "Recently Viewed Products",
+        "heading_color": "#111111",
+        "products_to_show": 8,
+        "columns_desktop": 4,
+        "columns_tablet": 2,
+        "columns_mobile": 2,
+        "card_gap": 20,
+        "section_bg_color": "#ffffff",
+        "padding_top": 48,
+        "padding_bottom": 64
+      }
+    }
+  },
+  "order": [
+    "main",
+    "recently_viewed"
+  ]
+}

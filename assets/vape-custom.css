@@ -1,0 +1,440 @@
+/* ================================================================
+   VAPE STORE — Custom Theme CSS (Clean White Theme)
+   File: assets/vape-custom.css
+   
+   Loaded via snippets/stylesheets.liquid after base.css.
+   Clean white & light aesthetic with sharp typography & red accent.
+   ================================================================ */
+
+
+/* ================================================================
+   1. GOOGLE FONT IMPORT — Inter
+   ================================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+
+/* ================================================================
+   2. GLOBAL WHITE THEME ROOT OVERRIDES
+   ================================================================ */
+:root {
+  /* Typography */
+  --vape-font-primary: 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Brand colours (White Theme) */
+  --vape-dark:        #ffffff;
+  --vape-dark-2:      #f9f9f9;
+  --vape-dark-3:      #f4f4f4;
+  --vape-dark-border: rgba(0, 0, 0, 0.08);
+  --vape-white:       #111111;
+  --vape-off-white:   #222222;
+  --vape-muted:       #666666;
+  --vape-accent:      #e53935;   /* Red active / highlight colour */
+  --vape-accent-dark: #c62828;
+
+  /* Transitions */
+  --vape-transition-fast:   0.18s ease;
+  --vape-transition-normal: 0.28s ease;
+  --vape-transition-slow:   0.45s ease;
+
+  /* Spacing scale */
+  --vape-page-padding: clamp(1rem, 5vw, 5rem);
+}
+
+
+/* ================================================================
+   3. HEADER — Clean White Background & Dark Navigation Links
+   ================================================================ */
+
+/* ── Header wrapper ── */
+header-component,
+.header-section,
+.header-section .header {
+  background-color: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.header__row--top,
+.header__row--bottom {
+  background: #ffffff !important;
+}
+
+/* ── Logo text / image ── */
+.header__logo,
+.header__logo a,
+.header__logo img {
+  color: #111111 !important;
+}
+
+/* ── Navigation links ── */
+.header-menu__link,
+.header__menu-item > a,
+.header__nav-item > a,
+[data-menu-item] > a {
+  color: #111111 !important;
+  font-family: var(--vape-font-primary);
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: color var(--vape-transition-fast);
+  text-decoration: none;
+}
+
+.header-menu__link:hover,
+.header__menu-item > a:hover,
+.header__nav-item > a:hover,
+[data-menu-item] > a:hover,
+.header-menu__link[aria-current="page"],
+[data-menu-item] > a[aria-current="page"] {
+  color: var(--vape-accent) !important;
+}
+
+/* Dropdown caret */
+.header-menu__caret svg,
+.header__menu-item svg {
+  stroke: currentColor;
+}
+
+/* ── Header action icons (search, account, cart, wishlist) ── */
+.header-actions__item,
+.header-actions button,
+.header-actions a,
+.header__actions a,
+.header__actions button {
+  color: #111111 !important;
+  transition: color var(--vape-transition-fast);
+}
+
+.header-actions__item:hover,
+.header-actions button:hover,
+.header-actions a:hover,
+.header__actions a:hover,
+.header__actions button:hover {
+  color: var(--vape-accent) !important;
+  opacity: 1 !important;
+}
+
+/* ── Cart bubble count badge ── */
+.cart-icon-bubble,
+.cart-count-bubble {
+  background: var(--vape-accent) !important;
+  color: #ffffff !important;
+}
+
+/* ── Sticky header ── */
+.header--sticky,
+header-component[sticky] .header {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Mobile header drawer ── */
+.header-drawer,
+.theme-drawer--header {
+  background: #ffffff !important;
+}
+
+.header-drawer a,
+.theme-drawer--header a {
+  color: #111111 !important;
+}
+
+.header-drawer a:hover,
+.theme-drawer--header a:hover {
+  color: var(--vape-accent) !important;
+}
+
+/* ── Announcement bar (above header) ── */
+.announcement-bar {
+  background: #f8f8f8 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.announcement-bar__message,
+.announcement-bar a {
+  color: #222222 !important;
+  font-family: var(--vape-font-primary);
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+
+
+/* ================================================================
+   4. MEGA MENU / DROPDOWN — White surface
+   ================================================================ */
+.header-menu__dropdown,
+.mega-menu,
+.submenu-wrapper,
+.header__submenu {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+.header-menu__dropdown a,
+.mega-menu a,
+.submenu-wrapper a {
+  color: #222222 !important;
+  transition: color var(--vape-transition-fast), padding-left var(--vape-transition-fast);
+}
+
+.header-menu__dropdown a:hover,
+.mega-menu a:hover,
+.submenu-wrapper a:hover {
+  color: var(--vape-accent) !important;
+  padding-left: 4px;
+}
+
+
+/* ================================================================
+   5. CART DRAWER — White surface
+   ================================================================ */
+.cart-drawer,
+[data-cart-drawer] {
+  background: #ffffff !important;
+  color: #111111 !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.cart-drawer__header {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+  color: #111111 !important;
+}
+
+.cart-drawer__footer {
+  background: #f9f9f9 !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.cart-items__row {
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+.cart-item__name,
+.cart-item__title,
+.price {
+  color: #111111 !important;
+}
+
+.cart-item__price-wrapper .price--sale {
+  color: var(--vape-accent) !important;
+}
+
+
+/* ================================================================
+   6. SEARCH MODAL — White surface
+   ================================================================ */
+.search-modal,
+.predictive-search {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.12) !important;
+}
+
+.search-modal input,
+.predictive-search input,
+.search-form input {
+  background: #f5f5f5 !important;
+  color: #111111 !important;
+  border-color: rgba(0, 0, 0, 0.1) !important;
+}
+
+.search-modal input::placeholder,
+.predictive-search input::placeholder {
+  color: #888888 !important;
+}
+
+.predictive-search__result-item a {
+  color: #222222 !important;
+}
+
+.predictive-search__result-item:hover,
+.predictive-search__result-item a:hover {
+  background: #f5f5f5 !important;
+  color: #111111 !important;
+}
+
+
+/* ================================================================
+   7. GLOBAL BODY & PAGE — White theme
+   ================================================================ */
+body {
+  font-family: var(--vape-font-primary);
+  background-color: #ffffff !important;
+  color: #222222;
+}
+
+/* Scrollbar — subtle light themed */
+::-webkit-scrollbar            { width: 6px; height: 6px; }
+::-webkit-scrollbar-track      { background: #ffffff; }
+::-webkit-scrollbar-thumb      { background: rgba(0,0,0,0.15); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover{ background: rgba(0,0,0,0.3); }
+
+
+/* ================================================================
+   8. BUTTONS
+   ================================================================ */
+.button,
+.btn,
+button[type="submit"]:not([class*="vhs"]) {
+  font-family: var(--vape-font-primary);
+  letter-spacing: 0.05em;
+}
+
+.button--secondary,
+.btn--secondary {
+  border-color: rgba(0,0,0,0.25);
+  color: #111111;
+  background: transparent;
+  transition:
+    background var(--vape-transition-normal),
+    border-color var(--vape-transition-normal),
+    color var(--vape-transition-normal);
+}
+
+.button--secondary:hover,
+.btn--secondary:hover {
+  background: rgba(0,0,0,0.04);
+  border-color: #111111;
+}
+
+
+/* ================================================================
+   9. PRODUCT CARDS — Clean light cards
+   ================================================================ */
+.product-card,
+.card-wrapper,
+.card {
+  background: #ffffff;
+  border: 1px solid #eeeeee;
+  transition: border-color var(--vape-transition-normal), box-shadow var(--vape-transition-normal);
+}
+
+.product-card:hover,
+.card-wrapper:hover,
+.card:hover {
+  border-color: #e0e0e0;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.06);
+}
+
+.card__heading,
+.product-card__title,
+.card__title {
+  color: #111111;
+  font-family: var(--vape-font-primary);
+}
+
+.price__regular,
+.price__sale {
+  color: #111111 !important;
+}
+
+.price--on-sale .price__sale {
+  color: var(--vape-accent) !important;
+}
+
+
+/* ================================================================
+   10. SECTION HEADINGS
+   ================================================================ */
+.section-header h2,
+.section-header h3,
+.section__heading,
+[class*="section"] > h2,
+[class*="section"] > h3 {
+  font-family: var(--vape-font-primary);
+  font-weight: 800;
+  color: #111111;
+  letter-spacing: 0.01em;
+}
+
+
+/* ================================================================
+   11. FORMS & INPUTS
+   ================================================================ */
+input[type="text"],
+input[type="email"],
+input[type="search"],
+input[type="password"],
+textarea,
+select {
+  background: #f9f9f9 !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: #111111 !important;
+  font-family: var(--vape-font-primary);
+  border-radius: 0;
+  transition: border-color var(--vape-transition-fast), box-shadow var(--vape-transition-fast);
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="search"]:focus,
+textarea:focus {
+  border-color: #111111 !important;
+  outline: none !important;
+  box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.2) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: #888888 !important;
+}
+
+
+/* ================================================================
+   12. FOOTER — Light footer
+   ================================================================ */
+.footer,
+footer {
+  background: #f8f8f8 !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.footer__heading,
+.footer-block__heading {
+  color: #111111 !important;
+  font-family: var(--vape-font-primary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.footer__link,
+.footer a,
+.footer-block a {
+  color: #555555 !important;
+  font-family: var(--vape-font-primary);
+  font-size: 0.875rem;
+  transition: color var(--vape-transition-fast);
+  text-decoration: none;
+}
+
+.footer__link:hover,
+.footer a:hover,
+.footer-block a:hover {
+  color: var(--vape-accent) !important;
+}
+
+.footer__copyright,
+.footer__content-bottom {
+  color: #777777 !important;
+  font-size: 0.75rem;
+}
+
+
+/* ================================================================
+   13. VAPE NEWSLETTER + FOOTER — keep theme overrides from
+       fighting the custom underline/form styles
+   ================================================================ */
+.section-vape-newsletter .vnl__input,
+.section-vape-newsletter .vnl__input:focus {
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+.section-vape-footer {
+  background: #f2f2f2;
+}

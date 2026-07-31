@@ -1,0 +1,983 @@
+{%- comment -%}
+  ============================================================
+  Vape Featured Products Slider — sections/vape-featured-products.liquid
+
+  Features matching the reference design:
+  • Header with centered title and integrated prev/next arrow buttons
+  • Product cards with red discount badges, 5-star ratings, vendor name
+  • Image hover effect: smooth transition to 2nd product image
+  • Floating side action buttons on hover: Quick Add to Cart & Quick View
+  • Quick View Modal with image gallery carousel, quantity selector,
+    Add to Bag, and Buy It Now buttons
+  • Dynamic collection picker & customizer settings
+  ============================================================
+{%- endcomment -%}
+
+{%- liquid
+  assign selected_collection = section.settings.collection
+  assign limit_products = section.settings.products_to_show | default: 8
+  assign card_desktop_cols = section.settings.columns_desktop | default: 4
+  assign card_tablet_cols = section.settings.columns_tablet | default: 2
+  assign card_mobile_cols = section.settings.columns_mobile | default: 1
+-%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    padding-block-start: {{ section.settings.padding_top }}px;
+    padding-block-end: {{ section.settings.padding_bottom }}px;
+    background-color: {{ section.settings.section_bg_color }};
+  }
+
+  #vfp-{{ section.id }} {
+    --vfp-cols-desktop: {{ card_desktop_cols }};
+    --vfp-cols-tablet: {{ card_tablet_cols }};
+    --vfp-cols-mobile: {{ card_mobile_cols }};
+    --vfp-gap: {{ section.settings.card_gap }}px;
+  }
+{% endstyle %}
+
+<div id="vfp-{{ section.id }}" class="vfp-section page-width">
+
+  {%- comment -%} ── Header with Centered Title & Inline Carousel Arrows ── {%- endcomment -%}
+  <div class="vfp-header">
+    <button type="button" class="vfp-arrow vfp-arrow--prev" aria-label="Previous products" data-vfp-prev>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+    </button>
+
+    <h2 class="vfp-title">
+      {{ section.settings.heading | escape }}
+    </h2>
+
+    <button type="button" class="vfp-arrow vfp-arrow--next" aria-label="Next products" data-vfp-next>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+    </button>
+  </div>
+
+  {%- comment -%} ── Product Cards Carousel Track ── {%- endcomment -%}
+  <div class="vfp-carousel-wrapper">
+    <div class="vfp-track" data-vfp-track>
+
+      {%- if selected_collection != blank and selected_collection.products_count > 0 -%}
+        {%- for product in selected_collection.products limit: limit_products -%}
+          {% render 'vape-product-card', product: product, section_id: section.id %}
+        {%- endfor -%}
+      {%- else -%}
+        {%- comment -%} Demo / Placeholder Product Cards {%- endcomment -%}
+        {%- for i in (1..6) -%}
+          <div class="vfp-card-item">
+            <div class="vfp-card">
+              <div class="vfp-card-badge">-20%</div>
+              <div class="vfp-card-image-wrap">
+                {{ 'product-' | append: i | placeholder_svg_tag: 'vfp-card-svg' }}
+              </div>
+              <div class="vfp-card-content">
+                <div class="vfp-rating">★★★★★</div>
+                <div class="vfp-vendor">BY VAPEHUB</div>
+                <h3 class="vfp-product-title">Demo Vape Product {{ i }}</h3>
+                <div class="vfp-price-row">
+                  <span class="vfp-price-sale">$45.00</span>
+                  <span class="vfp-price-compare">$60.00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        {%- endfor -%}
+      {%- endif -%}
+
+    </div>
+  </div>
+
+</div>
+
+{%- comment -%} ── Quick View Modal Markup ── {%- endcomment -%}
+<div class="vfp-modal-overlay" id="vfp-qv-modal-{{ section.id }}" aria-hidden="true">
+  <div class="vfp-modal-dialog" role="dialog" aria-modal="true">
+    <button type="button" class="vfp-modal-close" aria-label="Close modal" data-qv-close>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+    </button>
+    <div class="vfp-modal-body" id="vfp-qv-body-{{ section.id }}">
+      {%- comment -%} Dynamic JS content injected here {%- endcomment -%}
+    </div>
+  </div>
+</div>
+
+<style>
+  /* ============================================================
+     VAPE FEATURED PRODUCTS (vfp) STYLES
+  ============================================================ */
+
+  .vfp-section {
+    width: 100%;
+    margin-inline: auto;
+  }
+
+  /* ── Header & Inline Navigation Arrows ── */
+  .vfp-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .vfp-title {
+    font-family: var(--vape-font-primary, sans-serif);
+    font-size: clamp(1.5rem, 3.5vw, 2.25rem);
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: {{ section.settings.heading_color }};
+    margin: 0;
+    text-align: center;
+  }
+
+  .vfp-arrow {
+    background: transparent;
+    border: none;
+    color: {{ section.settings.heading_color }};
+    cursor: pointer;
+    padding: 0.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+    opacity: 0.7;
+  }
+
+  .vfp-arrow:hover {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+
+  /* ── Carousel Track ── */
+  .vfp-carousel-wrapper {
+    overflow: hidden;
+    width: 100%;
+  }
+
+  .vfp-track {
+    display: flex;
+    gap: var(--vfp-gap, 20px);
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+    scroll-behavior: smooth;
+  }
+
+  .vfp-card-item {
+    flex: 0 0 calc((100% - (var(--vfp-gap) * (var(--vfp-cols-desktop) - 1))) / var(--vfp-cols-desktop));
+    max-width: calc((100% - (var(--vfp-gap) * (var(--vfp-cols-desktop) - 1))) / var(--vfp-cols-desktop));
+  }
+
+  @media (max-width: 989px) {
+    .vfp-card-item {
+      flex: 0 0 calc((100% - (var(--vfp-gap) * (var(--vfp-cols-tablet) - 1))) / var(--vfp-cols-tablet));
+      max-width: calc((100% - (var(--vfp-gap) * (var(--vfp-cols-tablet) - 1))) / var(--vfp-cols-tablet));
+    }
+  }
+
+  @media (max-width: 575px) {
+    .vfp-card-item {
+      flex: 0 0 calc((100% - (var(--vfp-gap) * (var(--vfp-cols-mobile) - 1))) / var(--vfp-cols-mobile));
+      max-width: calc((100% - (var(--vfp-gap) * (var(--vfp-cols-mobile) - 1))) / var(--vfp-cols-mobile));
+    }
+  }
+
+  /* ── Product Card ── */
+  .vfp-card {
+    background: #ffffff;
+    border: 1px solid #eeeeee;
+    border-radius: 4px;
+    padding: 1.25rem;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+  }
+
+  .vfp-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
+    border-color: #e0e0e0;
+  }
+
+  /* Red Discount Badge */
+  .vfp-card-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: #e53935;
+    color: #ffffff;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    z-index: 2;
+  }
+
+  /* Image Wrap with Secondary Image Hover Swap */
+  .vfp-card-image-wrap {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    margin-bottom: 1rem;
+  }
+
+  .vfp-img-primary,
+  .vfp-img-secondary {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity 0.4s ease, transform 0.4s ease;
+  }
+
+  .vfp-img-secondary {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+  }
+
+  .vfp-card:hover .vfp-img-primary.has-secondary {
+    opacity: 0;
+  }
+
+  .vfp-card:hover .vfp-img-secondary {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+
+  .vfp-card-svg {
+    width: 70%;
+    height: 70%;
+    opacity: 0.25;
+  }
+
+  /* Floating Side Action Buttons (Quick Add & Quick View) */
+  .vfp-card-actions {
+    position: absolute;
+    right: 1rem;
+    bottom: 4.5rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    z-index: 3;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+  }
+
+  .vfp-card:hover .vfp-card-actions {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .vfp-action-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f4f4f4;
+    border: none;
+    color: #333333;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+  }
+
+  .vfp-action-btn:hover {
+    background: #e53935;
+    color: #ffffff;
+    transform: scale(1.1);
+  }
+
+  /* Card Text Details */
+  .vfp-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    margin-top: auto;
+  }
+
+  .vfp-rating {
+    color: #cccccc;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+  }
+
+  .vfp-vendor {
+    font-size: 0.6875rem;
+    font-weight: 700;
+    color: #888888;
+    text-transform: uppercase;
+  }
+
+  .vfp-vendor-name {
+    color: #e53935;
+  }
+
+  .vfp-product-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #111111;
+    margin: 0;
+    line-height: 1.35;
+    text-decoration: none;
+  }
+
+  .vfp-product-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .vfp-price-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .vfp-price-sale {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #e53935;
+  }
+
+  .vfp-price-compare {
+    font-size: 0.85rem;
+    color: #aaaaaa;
+    text-decoration: line-through;
+  }
+
+  /* ============================================================
+     QUICK VIEW MODAL STYLES (Matching Screenshot 3)
+  ============================================================ */
+  .vfp-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(4px);
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    padding: 1.5rem;
+  }
+
+  .vfp-modal-overlay.is-active {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .vfp-modal-dialog {
+    background: #ffffff;
+    border-radius: 12px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    position: relative;
+    transform: translateY(20px);
+    transition: transform 0.3s ease;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+  }
+
+  .vfp-modal-overlay.is-active .vfp-modal-dialog {
+    transform: translateY(0);
+  }
+
+  .vfp-modal-close {
+    position: absolute;
+    top: 1.25rem;
+    right: 1.25rem;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #f5f5f5;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #333;
+    z-index: 10;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .vfp-modal-close:hover {
+    background: #e0e0e0;
+    transform: scale(1.08);
+  }
+
+  /* Quick View Modal Grid */
+  .vfp-qv-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2.5rem;
+    padding: 3rem 2.5rem 2.5rem;
+  }
+
+  @media (max-width: 768px) {
+    .vfp-qv-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+      padding: 2.5rem 1.5rem 1.5rem;
+    }
+  }
+
+  /* Modal Image Gallery Carousel */
+  .vfp-qv-gallery {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    background: #f9f9f9;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .vfp-qv-gallery img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .vfp-qv-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: rgba(40, 40, 40, 0.85);
+    color: #ffffff;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s ease, transform 0.2s ease;
+  }
+
+  .vfp-qv-arrow:hover {
+    background: #000000;
+    transform: translateY(-50%) scale(1.1);
+  }
+
+  .vfp-qv-arrow--prev { left: 1rem; }
+  .vfp-qv-arrow--next { right: 1rem; }
+
+  /* Modal Details */
+  .vfp-qv-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+
+  .vfp-qv-title {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #111111;
+    margin: 0;
+  }
+
+  .vfp-qv-price-wrap {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .vfp-qv-price-compare {
+    font-size: 1.1rem;
+    color: #aaaaaa;
+    text-decoration: line-through;
+    font-weight: 600;
+  }
+
+  .vfp-qv-price-sale {
+    font-size: 1.6rem;
+    color: #e53935;
+    font-weight: 900;
+  }
+
+  .vfp-qv-discount-tag {
+    background: #ff5722;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 800;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+  }
+
+  .vfp-qv-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    font-size: 0.85rem;
+    color: #555555;
+    border-top: 1px solid #eeeeee;
+    border-bottom: 1px solid #eeeeee;
+    padding-block: 1rem;
+  }
+
+  .vfp-qv-meta-row {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .vfp-qv-meta-label {
+    font-weight: 700;
+    color: #111111;
+    min-width: 90px;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+  }
+
+  /* Quantity Selector & Buttons */
+  .vfp-qv-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .vfp-qv-qty-label {
+    font-size: 0.75rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #111111;
+  }
+
+  .vfp-qv-qty-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+  }
+
+  .vfp-qty-box {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #dddddd;
+    border-radius: 4px;
+    height: 48px;
+  }
+
+  .vfp-qty-btn {
+    width: 40px;
+    height: 100%;
+    background: transparent;
+    border: none;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #555;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vfp-qty-btn:hover {
+    color: #000;
+  }
+
+  .vfp-qty-input {
+    width: 45px;
+    height: 100%;
+    border: none;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #111;
+    background: transparent;
+  }
+
+  .vfp-btn-add-bag {
+    flex: 1;
+    height: 48px;
+    background: #e5e5e5;
+    color: #111111;
+    border: none;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease, color 0.2s ease;
+  }
+
+  .vfp-btn-add-bag:hover {
+    background: #d5d5d5;
+  }
+
+  .vfp-btn-buy-now {
+    width: 100%;
+    height: 48px;
+    background: #000000;
+    color: #ffffff;
+    border: none;
+    font-weight: 800;
+    font-size: 0.75rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+  }
+
+  .vfp-btn-buy-now:hover {
+    background: #222222;
+  }
+</style>
+
+<script>
+(function () {
+  'use strict';
+
+  function initVapeFeaturedProducts(section) {
+    const track = section.querySelector('[data-vfp-track]');
+    const prevBtn = section.querySelector('[data-vfp-prev]');
+    const nextBtn = section.querySelector('[data-vfp-next]');
+
+    if (!track) return;
+
+    /* Carousel Scrolling */
+    if (prevBtn && nextBtn) {
+      prevBtn.addEventListener('click', () => {
+        const itemWidth = track.querySelector('.vfp-card-item')?.offsetWidth || 280;
+        track.scrollBy({ left: -(itemWidth + 20), behavior: 'smooth' });
+      });
+
+      nextBtn.addEventListener('click', () => {
+        const itemWidth = track.querySelector('.vfp-card-item')?.offsetWidth || 280;
+        track.scrollBy({ left: itemWidth + 20, behavior: 'smooth' });
+      });
+    }
+
+    /* Quick View Modal Triggering */
+    const modalOverlay = section.querySelector('.vfp-modal-overlay');
+    const modalBody = section.querySelector('.vfp-modal-body');
+    const closeBtn = section.querySelector('[data-qv-close]');
+
+    if (modalOverlay && modalBody) {
+      /* Close modal handler */
+      function closeModal() {
+        modalOverlay.classList.remove('is-active');
+        modalOverlay.setAttribute('aria-hidden', 'true');
+      }
+
+      if (closeBtn) closeBtn.addEventListener('click', closeModal);
+      modalOverlay.addEventListener('click', (e) => {
+        if (e.target === modalOverlay) closeModal();
+      });
+
+      /* Quick View Button Click */
+      section.querySelectorAll('[data-qv-trigger]').forEach((btn) => {
+        btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          const productDataStr = btn.dataset.productJson;
+          if (!productDataStr) return;
+
+          try {
+            const p = JSON.parse(productDataStr);
+            renderQuickViewModal(p, modalBody);
+            modalOverlay.classList.add('is-active');
+            modalOverlay.setAttribute('aria-hidden', 'false');
+          } catch (err) {
+            console.error("Error parsing product JSON for Quick View:", err);
+          }
+        });
+      });
+    }
+
+    /* AJAX Quick Add to Cart */
+    section.querySelectorAll('[data-quick-add-btn]').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const variantId = btn.dataset.variantId;
+        if (!variantId) return;
+
+        btn.style.opacity = '0.5';
+        fetch('/cart/add.js', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: [{ id: parseInt(variantId, 10), quantity: 1 }] })
+        })
+        .then(res => res.json())
+        .then(data => {
+          btn.style.opacity = '1';
+          /* Trigger Shopify cart drawer refresh if available */
+          document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+          alert('Added to cart!');
+        })
+        .catch(err => {
+          btn.style.opacity = '1';
+          console.error(err);
+        });
+      });
+    });
+  }
+
+  /* Render Quick View Modal HTML matching Screenshot 3 */
+  function renderQuickViewModal(p, container) {
+    const images = p.images || [];
+    const mainImgSrc = images[0] || p.featured_image || '';
+    const comparePrice = p.compare_at_price ? (p.compare_at_price / 100).toFixed(2) : null;
+    const price = (p.price / 100).toFixed(2);
+    const discount = comparePrice ? Math.round(((p.compare_at_price - p.price) / p.compare_at_price) * 100) : 0;
+
+    let galleryMarkup = `
+      <div class="vfp-qv-gallery">
+        <img id="qv-main-img" src="${mainImgSrc}" alt="${p.title}" />
+        ${images.length > 1 ? `
+          <button type="button" class="vfp-qv-arrow vfp-qv-arrow--prev" id="qv-img-prev">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"></polyline></svg>
+          </button>
+          <button type="button" class="vfp-qv-arrow vfp-qv-arrow--next" id="qv-img-next">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>
+          </button>
+        ` : ''}
+      </div>
+    `;
+
+    let html = `
+      <div class="vfp-qv-grid">
+        ${galleryMarkup}
+        <div class="vfp-qv-details">
+          <h2 class="vfp-qv-title">${p.title}</h2>
+          
+          <div class="vfp-qv-price-wrap">
+            ${comparePrice ? `<span class="vfp-qv-price-compare">$${comparePrice}</span>` : ''}
+            <span class="vfp-qv-price-sale">$${price}</span>
+            ${discount > 0 ? `<span class="vfp-qv-discount-tag">-${discount}%</span>` : ''}
+          </div>
+
+          <div class="vfp-qv-meta">
+            ${p.tags && p.tags.length ? `
+              <div class="vfp-qv-meta-row">
+                <span class="vfp-qv-meta-label">TAGS:</span>
+                <span>${p.tags.join(', ')}</span>
+              </div>
+            ` : ''}
+            <div class="vfp-qv-meta-row">
+              <span class="vfp-qv-meta-label">CATEGORY:</span>
+              <span>${p.type || 'Vape Accessories'}</span>
+            </div>
+            <div class="vfp-qv-meta-row">
+              <span class="vfp-qv-meta-label">VENDOR:</span>
+              <span>${p.vendor || 'VAPEHUB'}</span>
+            </div>
+          </div>
+
+          <div class="vfp-qv-actions">
+            <div class="vfp-qv-qty-label">QUANTITY:</div>
+            <div class="vfp-qv-qty-row">
+              <div class="vfp-qty-box">
+                <button type="button" class="vfp-qty-btn" id="qv-qty-minus">-</button>
+                <input type="text" class="vfp-qty-input" id="qv-qty-val" value="1" readonly />
+                <button type="button" class="vfp-qty-btn" id="qv-qty-plus">+</button>
+              </div>
+              <button type="button" class="vfp-btn-add-bag" id="qv-add-bag">ADD TO BAG</button>
+            </div>
+            <button type="button" class="vfp-btn-buy-now" id="qv-buy-now">BUY IT NOW</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    container.innerHTML = html;
+
+    /* Gallery carousel logic */
+    if (images.length > 1) {
+      let currentIdx = 0;
+      const mainImg = container.querySelector('#qv-main-img');
+      container.querySelector('#qv-img-prev').addEventListener('click', () => {
+        currentIdx = (currentIdx - 1 + images.length) % images.length;
+        mainImg.src = images[currentIdx];
+      });
+      container.querySelector('#qv-img-next').addEventListener('click', () => {
+        currentIdx = (currentIdx + 1) % images.length;
+        mainImg.src = images[currentIdx];
+      });
+    }
+
+    /* Quantity box logic */
+    const qtyInput = container.querySelector('#qv-qty-val');
+    container.querySelector('#qv-qty-minus').addEventListener('click', () => {
+      let v = parseInt(qtyInput.value, 10) || 1;
+      if (v > 1) qtyInput.value = v - 1;
+    });
+    container.querySelector('#qv-qty-plus').addEventListener('click', () => {
+      let v = parseInt(qtyInput.value, 10) || 1;
+      qtyInput.value = v + 1;
+    });
+
+    /* Add to Bag Handler */
+    const variantId = p.variants && p.variants[0] ? p.variants[0].id : p.id;
+    container.querySelector('#qv-add-bag').addEventListener('click', () => {
+      const q = parseInt(qtyInput.value, 10) || 1;
+      fetch('/cart/add.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: [{ id: variantId, quantity: q }] })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.dispatchEvent(new CustomEvent('cart:refresh', { bubbles: true }));
+        alert('Added to bag!');
+      });
+    });
+
+    /* Buy It Now Handler */
+    container.querySelector('#qv-buy-now').addEventListener('click', () => {
+      const q = parseInt(qtyInput.value, 10) || 1;
+      window.location.href = `/cart/${variantId}:${q}`;
+    });
+  }
+
+  function setupAll() {
+    document.querySelectorAll('.section-vape-featured-products').forEach(initVapeFeaturedProducts);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', setupAll);
+  } else {
+    setupAll();
+  }
+
+  document.addEventListener('shopify:section:load', function (e) {
+    if (e.target.classList.contains('section-vape-featured-products')) {
+      initVapeFeaturedProducts(e.target);
+    }
+  });
+})();
+</script>
+
+{% schema %}
+{
+  "name": "Vape Featured Products",
+  "class": "section-vape-featured-products",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "header",
+      "content": "Collection Source"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "Select Collection"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Maximum products to show",
+      "min": 4,
+      "max": 20,
+      "step": 2,
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Section Header"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "FEATURED PRODUCTS"
+    },
+    {
+      "type": "color",
+      "id": "heading_color",
+      "label": "Heading Color",
+      "default": "#111111"
+    },
+    {
+      "type": "header",
+      "content": "Grid / Carousel Layout"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Columns — Desktop",
+      "min": 3,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "columns_tablet",
+      "label": "Columns — Tablet",
+      "min": 2,
+      "max": 3,
+      "step": 1,
+      "default": 2
+    },
+    {
+      "type": "range",
+      "id": "columns_mobile",
+      "label": "Columns — Mobile",
+      "min": 1,
+      "max": 2,
+      "step": 1,
+      "default": 1
+    },
+    {
+      "type": "range",
+      "id": "card_gap",
+      "label": "Card Gap (px)",
+      "min": 10,
+      "max": 40,
+      "step": 5,
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "Section Spacing & Background"
+    },
+    {
+      "type": "color",
+      "id": "section_bg_color",
+      "label": "Section Background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Padding Top",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 60
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Padding Bottom",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 60
+    }
+  ],
+  "presets": [
+    {
+      "name": "Vape Featured Products",
+      "category": "Products"
+    }
+  ]
+}
+{% endschema %}

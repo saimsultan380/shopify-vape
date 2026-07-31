@@ -1,0 +1,52 @@
+{
+  "type": "header",
+  "name": "t:names.header",
+  "sections": {
+    "vape_mega_header": {
+      "type": "vape-mega-header",
+      "blocks": {
+        "mega_collections": {
+          "type": "mega_menu",
+          "settings": {
+            "nav_item_title": "Collections",
+            "feat_1_label": "BEST SELLERS",
+            "feat_1_url": "/collections/best-sellers",
+            "feat_2_label": "NEW ARRIVAL",
+            "feat_2_url": "/collections/new-arrivals",
+            "feat_3_label": "TOP TRENDING",
+            "feat_3_url": "/collections/trending",
+            "col_1_heading": "PRODUCTS CATEGORY",
+            "col_1_menu": "collections-category-1",
+            "col_2_heading": "PRODUCTS CATEGORY",
+            "col_2_menu": "collections-category-2",
+            "col_3_heading": "PRODUCTS CATEGORY",
+            "col_3_menu": "collections-category-3"
+          }
+        }
+      },
+      "block_order": ["mega_collections"],
+      "settings": {
+        "main_menu": "main-menu",
+        "logo_height": 42,
+        "header_bg": "#0a0a0a",
+        "header_text_color": "#ffffff",
+        "accent_color": "#e53935",
+        "header_border_color": "#1c1c1c",
+        "header_height": 72,
+        "sticky": true,
+        "show_search": true,
+        "search_placeholder": "Search products, brands…",
+        "show_account": true,
+        "show_wishlist": true,
+        "nav_font_size": 14,
+        "mega_bg": "#ffffff",
+        "mega_text_color": "#333333",
+        "mega_heading_color": "#999999",
+        "mega_featured_color": "#111111"
+      }
+    }
+  },
+  "order": [
+    "vape_mega_header"
+  ]
+}

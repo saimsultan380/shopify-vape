@@ -117,10 +117,32 @@
         "padding_top": 40,
         "padding_bottom": 40
       }
+    },
+    "vape_video_section_4xHywA": {
+      "type": "vape-video-section",
+      "name": "Vape Video Section",
+      "settings": {
+        "thumbnail": "shopify://shop_images/slide-33.jpg",
+        "video_loop": false,
+        "use_lightbox": true,
+        "play_label": "Play video",
+        "play_btn_size": 80,
+        "caption": "",
+        "caption_subtext": "",
+        "caption_position": "bottom-left",
+        "section_height": "500px",
+        "full_width": true,
+        "border_radius": 0,
+        "overlay_opacity": 30,
+        "section_bg": "#ffffff",
+        "padding_top": 0,
+        "padding_bottom": 0
+      }
     }
   },
   "order": [
     "vape_hero_slider_AXfAUt",
-    "vape_deal_banner_NgF7rh"
+    "vape_deal_banner_NgF7rh",
+    "vape_video_section_4xHywA"
   ]
 }

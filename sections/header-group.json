@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "type": "header",
   "name": "t:names.header",
@@ -5,40 +14,49 @@
     "vape_mega_header": {
       "type": "vape-mega-header",
       "blocks": {
-        "mega_collections": {
+        "mega_menu_EqitFV": {
           "type": "mega_menu",
           "settings": {
             "nav_item_title": "Collections",
             "feat_1_label": "BEST SELLERS",
-            "feat_1_url": "/collections/best-sellers",
+            "feat_1_url": "",
             "feat_2_label": "NEW ARRIVAL",
-            "feat_2_url": "/collections/new-arrivals",
+            "feat_2_url": "",
             "feat_3_label": "TOP TRENDING",
-            "feat_3_url": "/collections/trending",
+            "feat_3_url": "",
+            "feat_4_label": "",
+            "feat_4_url": "",
+            "feat_5_label": "",
+            "feat_5_url": "",
             "col_1_heading": "PRODUCTS CATEGORY",
-            "col_1_menu": "collections-category-1",
+            "col_1_menu": "",
             "col_2_heading": "PRODUCTS CATEGORY",
-            "col_2_menu": "collections-category-2",
+            "col_2_menu": "",
             "col_3_heading": "PRODUCTS CATEGORY",
-            "col_3_menu": "collections-category-3"
+            "col_3_menu": "",
+            "col_4_heading": "",
+            "col_4_menu": ""
           }
         }
       },
-      "block_order": ["mega_collections"],
+      "block_order": [
+        "mega_menu_EqitFV"
+      ],
       "settings": {
-        "main_menu": "main-menu",
         "logo_height": 42,
+        "main_menu": "main-menu",
+        "nav_font_size": 14,
+        "show_search": true,
+        "search_placeholder": "Search products, brands…",
+        "show_account": true,
+        "show_wishlist": true,
+        "wishlist_url": "",
         "header_bg": "#0a0a0a",
         "header_text_color": "#ffffff",
         "accent_color": "#e53935",
         "header_border_color": "#1c1c1c",
         "header_height": 72,
         "sticky": true,
-        "show_search": true,
-        "search_placeholder": "Search products, brands…",
-        "show_account": true,
-        "show_wishlist": true,
-        "nav_font_size": 14,
         "mega_bg": "#ffffff",
         "mega_text_color": "#333333",
         "mega_heading_color": "#999999",

@@ -138,11 +138,161 @@
         "padding_top": 0,
         "padding_bottom": 0
       }
+    },
+    "vape_trust_strip_nwU8fi": {
+      "type": "vape-trust-strip",
+      "blocks": {
+        "trust_item_DGbqz7": {
+          "type": "trust_item",
+          "settings": {
+            "icon": "delivery",
+            "icon_style": "solid",
+            "icon_accent_color": "#e8f5e9",
+            "icon_svg_color": "#2e7d32",
+            "title": "Free Delivery",
+            "description": "Free UK shipping on orders over £30",
+            "link": ""
+          }
+        },
+        "trust_item_ap79GQ": {
+          "type": "trust_item",
+          "settings": {
+            "icon": "shield",
+            "icon_style": "solid",
+            "icon_accent_color": "#e3f2fd",
+            "icon_svg_color": "#1565c0",
+            "title": "Secure Checkout",
+            "description": "256-bit SSL encrypted payments",
+            "link": ""
+          }
+        },
+        "trust_item_VCNcPQ": {
+          "type": "trust_item",
+          "settings": {
+            "icon": "support",
+            "icon_style": "solid",
+            "icon_accent_color": "#fce4ec",
+            "icon_svg_color": "#c62828",
+            "title": "Expert Support",
+            "description": "Vape experts available 7 days a week",
+            "link": ""
+          }
+        },
+        "trust_item_h4cdGL": {
+          "type": "trust_item",
+          "settings": {
+            "icon": "returns",
+            "icon_style": "solid",
+            "icon_accent_color": "#fff3e0",
+            "icon_svg_color": "#e65100",
+            "title": "Easy Returns",
+            "description": "Hassle-free 30-day returns policy",
+            "link": ""
+          }
+        }
+      },
+      "block_order": [
+        "trust_item_DGbqz7",
+        "trust_item_ap79GQ",
+        "trust_item_VCNcPQ",
+        "trust_item_h4cdGL"
+      ],
+      "name": "Trust Strip",
+      "settings": {
+        "section_title": "",
+        "section_subtitle": "",
+        "card_style": "strip",
+        "card_bg": "#f7f7f7",
+        "card_radius": 12,
+        "icon_bg_color": "#f0f4ff",
+        "icon_color": "#1a1a2e",
+        "text_color": "#111111",
+        "subtext_color": "#777777",
+        "divider_color": "#e5e5e5",
+        "icon_size": 64,
+        "section_bg": "#ffffff",
+        "padding_top": 48,
+        "padding_bottom": 48
+      }
+    },
+    "vape_promo_banners_DCLPPq": {
+      "type": "vape-promo-banners",
+      "blocks": {
+        "banner_83zYd8": {
+          "type": "banner",
+          "settings": {
+            "subtitle": "Your favourite saltnic brands",
+            "heading": "PREMIUM E-LIQUID",
+            "heading_size": "large",
+            "cta_text": "Shop now",
+            "cta_url": "",
+            "bg_color_start": "#00b09b",
+            "bg_color_end": "#f6a000",
+            "gradient_angle": "135"
+          }
+        },
+        "banner_BpEq9A": {
+          "type": "banner",
+          "settings": {
+            "subtitle": "Ultra compact vaping devices known",
+            "heading": "VAPE & POD MOD",
+            "heading_size": "large",
+            "cta_text": "Shop now",
+            "cta_url": "",
+            "bg_color_start": "#f953c6",
+            "bg_color_end": "#00c9ff",
+            "gradient_angle": "135"
+          }
+        },
+        "banner_ynyHYj": {
+          "type": "banner",
+          "settings": {
+            "subtitle": "Your favourite at the click of a button",
+            "heading": "TANKS & COILS",
+            "heading_size": "large",
+            "cta_text": "Shop now",
+            "cta_url": "",
+            "bg_color_start": "#ff4e50",
+            "bg_color_end": "#f9d423",
+            "gradient_angle": "135"
+          }
+        },
+        "banner_wide_9kxLVe": {
+          "type": "banner_wide",
+          "settings": {
+            "subtitle": "Your favourite saltnic brands",
+            "heading": "EXPLORING THE WORLD OF FLAVOR AND FREEDOM",
+            "heading_size": "large",
+            "cta_text": "Shop now",
+            "cta_url": "",
+            "image": "shopify://shop_images/slide-31_a3844686-3381-49d3-b18c-371548ff0e7f.jpg",
+            "bg_color_start": "#f6a000",
+            "bg_color_end": "#f39c12",
+            "gradient_angle": "90"
+          }
+        }
+      },
+      "block_order": [
+        "banner_83zYd8",
+        "banner_BpEq9A",
+        "banner_ynyHYj",
+        "banner_wide_9kxLVe"
+      ],
+      "name": "Vape Promo Banners",
+      "settings": {
+        "gap": 14,
+        "card_radius": 8,
+        "section_bg": "#ffffff",
+        "padding_top": 40,
+        "padding_bottom": 40
+      }
     }
   },
   "order": [
     "vape_hero_slider_AXfAUt",
     "vape_deal_banner_NgF7rh",
-    "vape_video_section_4xHywA"
+    "vape_video_section_4xHywA",
+    "vape_trust_strip_nwU8fi",
+    "vape_promo_banners_DCLPPq"
   ]
 }

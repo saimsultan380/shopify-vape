@@ -37,7 +37,51 @@
   --vape-transition-slow:   0.45s ease;
 
   /* Spacing scale */
-  --vape-page-padding: clamp(1rem, 5vw, 5rem);
+  --vape-page-padding: clamp(1rem, 4vw, 3rem);
+}
+
+
+/* ================================================================
+   2b. GLOBAL LAYOUT & SECTION SYSTEM
+   ================================================================ */
+
+/* ── Prevent horizontal overflow from any full-bleed element ── */
+body {
+  overflow-x: hidden;
+}
+
+/* ── Standardise the page-width container used by all vape sections ──
+   Horizon does NOT define a .page-width class. Our custom vape sections use
+   it as a simple max-width + centre container. The --page-width variable in
+   Horizon is set on .section grid wrappers and resolves to values like 120rem
+   (1920px), which is far too wide. We cap at 1440px explicitly. */
+.page-width {
+  max-width: min(1440px, 100%);
+  margin-inline: auto;
+  padding-inline: var(--vape-page-padding, clamp(1rem, 4vw, 3rem));
+}
+
+/* ── White background for all standard vape sections ──
+   Ensures any shopify-section wrapper that contains a vape- section
+   doesn't inherit an off-white or theme palette background. */
+.shopify-section:is(
+  .section-vape-trust-strip,
+  .section-vape-categories,
+  .section-vape-featured-products,
+  .section-vape-deal-banner,
+  .section-vape-promo-banners,
+  .section-vape-video-section,
+  .section-vape-newsletter,
+  .section-vape-recently-viewed
+) {
+  background-color: #ffffff;
+}
+
+/* ── Box-sizing normalisation for all vape-prefixed components ── */
+[class^="vhs"], [class^="vts"], [class^="vcat"], [class^="vfp"],
+[class^="vdb"], [class^="vpb"], [class^="vvs"], [class^="vnl"],
+[class^="vrv"], [class^="vf"],  [class^="vmh"] {
+  box-sizing: border-box;
 }
 
 

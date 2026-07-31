@@ -41,104 +41,108 @@
   data-autoplay-speed="{{ autoplay_ms }}"
 >
 
-  {%- comment -%} ── Section heading ── {%- endcomment -%}
-  {%- if section.settings.heading != blank -%}
-    <div class="vcat__header">
-      <{{ section.settings.heading_tag }}
-        class="vcat__heading vcat__heading--{{ section.settings.heading_size }}"
-        style="color: {{ section.settings.heading_color }};"
-      >
-        {{- section.settings.heading | escape -}}
-      </{{ section.settings.heading_tag }}>
-      {%- if section.settings.subheading != blank -%}
-        <p class="vcat__subheading" style="color: {{ section.settings.subheading_color }};">
-          {{- section.settings.subheading | escape -}}
-        </p>
-      {%- endif -%}
-    </div>
-  {%- endif -%}
+  <div class="vcat__container page-width">
 
-  {%- comment -%} ── Cards grid / slider track ── {%- endcomment -%}
-  <div
-    class="vcat__track"
-    role="list"
-    aria-label="{{ section.settings.heading | default: 'Product categories' | escape }}"
-  >
-
-    {%- for block in section.blocks -%}
-      {%- if block.type == 'category' -%}
-        {%- liquid
-          assign bg_start = block.settings.bg_color_start | default: '#f59e0b'
-          assign bg_end   = block.settings.bg_color_end   | default: '#f97316'
-          assign angle    = block.settings.gradient_angle  | default: '135'
-          assign cat_link = block.settings.url | default: '#'
-        -%}
-
-        <div
-          class="vcat__item"
-          role="listitem"
-          {{ block.shopify_attributes }}
+    {%- comment -%} ── Section heading ── {%- endcomment -%}
+    {%- if section.settings.heading != blank -%}
+      <div class="vcat__header">
+        <{{ section.settings.heading_tag }}
+          class="vcat__heading vcat__heading--{{ section.settings.heading_size }}"
+          style="color: {{ section.settings.heading_color }};"
         >
-          <a
-            href="{{ cat_link }}"
-            class="vcat__card"
-            style="background: linear-gradient({{ angle }}deg, {{ bg_start }}, {{ bg_end }});"
-            aria-label="{{ block.settings.title | default: 'Category' | escape }}"
-          >
-            {%- comment -%} Product image ── {%- endcomment -%}
-            <div class="vcat__img-wrap" aria-hidden="true">
-              {%- if block.settings.image != blank -%}
-                {{-
-                  block.settings.image
-                  | image_url: width: 400
-                  | image_tag:
-                    loading:  'lazy',
-                    class:    'vcat__img',
-                    widths:   '150, 200, 300, 400',
-                    sizes:    '(max-width: 749px) 40vw, (max-width: 989px) 25vw, 15vw',
-                    alt:      block.settings.image.alt | default: block.settings.title | escape
-                -}}
-              {%- else -%}
-                {%- comment -%} Placeholder SVG when no image is set {%- endcomment -%}
-                <div class="vcat__img-placeholder">
-                  {{- 'product-1' | placeholder_svg_tag: 'vcat__placeholder-svg' -}}
-                </div>
-              {%- endif -%}
-            </div>
-          </a>
+          {{- section.settings.heading | escape -}}
+        </{{ section.settings.heading_tag }}>
+        {%- if section.settings.subheading != blank -%}
+          <p class="vcat__subheading" style="color: {{ section.settings.subheading_color }};">
+            {{- section.settings.subheading | escape -}}
+          </p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
 
-          {%- comment -%} Category title below card ── {%- endcomment -%}
-          {%- if section.settings.show_titles and block.settings.title != blank -%}
-            <a
-              href="{{ cat_link }}"
-              class="vcat__title"
-              aria-hidden="true"
-              tabindex="-1"
-            >
-              {{- block.settings.title | escape -}}
-            </a>
-          {%- endif -%}
-        </div>
+    {%- comment -%} ── Cards grid / slider track ── {%- endcomment -%}
+    <div
+      class="vcat__track"
+      role="list"
+      aria-label="{{ section.settings.heading | default: 'Product categories' | escape }}"
+    >
 
-      {%- endif -%}
-    {%- endfor -%}
-
-  </div>
-  {%- comment -%} ── END track ── {%- endcomment -%}
-
-  {%- comment -%} ── Mobile slider dots ── {%- endcomment -%}
-  {%- if section.settings.enable_mobile_slider and block_count > 1 -%}
-    <div class="vcat__dots" aria-hidden="true">
       {%- for block in section.blocks -%}
         {%- if block.type == 'category' -%}
-          <span
-            class="vcat__dot{% if forloop.first %} vcat__dot--active{% endif %}"
-            data-index="{{ forloop.index0 }}"
-          ></span>
+          {%- liquid
+            assign bg_start = block.settings.bg_color_start | default: '#f59e0b'
+            assign bg_end   = block.settings.bg_color_end   | default: '#f97316'
+            assign angle    = block.settings.gradient_angle  | default: '135'
+            assign cat_link = block.settings.url | default: '#'
+          -%}
+
+          <div
+            class="vcat__item"
+            role="listitem"
+            {{ block.shopify_attributes }}
+          >
+            <a
+              href="{{ cat_link }}"
+              class="vcat__card"
+              style="background: linear-gradient({{ angle }}deg, {{ bg_start }}, {{ bg_end }});"
+              aria-label="{{ block.settings.title | default: 'Category' | escape }}"
+            >
+              {%- comment -%} Product image ── {%- endcomment -%}
+              <div class="vcat__img-wrap" aria-hidden="true">
+                {%- if block.settings.image != blank -%}
+                  {{-
+                    block.settings.image
+                    | image_url: width: 400
+                    | image_tag:
+                      loading:  'lazy',
+                      class:    'vcat__img',
+                      widths:   '150, 200, 300, 400',
+                      sizes:    '(max-width: 749px) 40vw, (max-width: 989px) 25vw, 15vw',
+                      alt:      block.settings.image.alt | default: block.settings.title | escape
+                  -}}
+                {%- else -%}
+                  {%- comment -%} Placeholder SVG when no image is set {%- endcomment -%}
+                  <div class="vcat__img-placeholder">
+                    {{- 'product-1' | placeholder_svg_tag: 'vcat__placeholder-svg' -}}
+                  </div>
+                {%- endif -%}
+              </div>
+            </a>
+
+            {%- comment -%} Category title below card ── {%- endcomment -%}
+            {%- if section.settings.show_titles and block.settings.title != blank -%}
+              <a
+                href="{{ cat_link }}"
+                class="vcat__title"
+                aria-hidden="true"
+                tabindex="-1"
+              >
+                {{- block.settings.title | escape -}}
+              </a>
+            {%- endif -%}
+          </div>
+
         {%- endif -%}
       {%- endfor -%}
+
     </div>
-  {%- endif -%}
+    {%- comment -%} ── END track ── {%- endcomment -%}
+
+    {%- comment -%} ── Mobile slider dots ── {%- endcomment -%}
+    {%- if section.settings.enable_mobile_slider and block_count > 1 -%}
+      <div class="vcat__dots" aria-hidden="true">
+        {%- for block in section.blocks -%}
+          {%- if block.type == 'category' -%}
+            <span
+              class="vcat__dot{% if forloop.first %} vcat__dot--active{% endif %}"
+              data-index="{{ forloop.index0 }}"
+            ></span>
+          {%- endif -%}
+        {%- endfor -%}
+      </div>
+    {%- endif -%}
+
+  </div>
 
 </section>
 
@@ -155,11 +159,17 @@
     overflow: hidden;
   }
 
+  /* ── Page-width container ── */
+  .vcat__container {
+    margin-inline: auto;
+    width: 100%;
+  }
+
   /* ── Section heading ── */
   .vcat__header {
     text-align: center;
     margin-bottom: clamp(1.5rem, 3vw, 2.5rem);
-    padding-inline: var(--vape-page-padding, 1.5rem);
+    /* No padding-inline needed — parent .page-width handles horizontal spacing */
   }
 
   .vcat__heading {
@@ -169,7 +179,7 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
     line-height: 1.15;
-    color: var(--vcat-title-color, #ffffff);
+    color: var(--vcat-title-color, #111111);
   }
 
   /* Heading size variants */
@@ -191,7 +201,7 @@
     display: grid;
     grid-template-columns: repeat(var(--vcat-cols-desktop, 6), 1fr);
     gap: var(--vcat-gap, 20px);
-    padding-inline: var(--vape-page-padding, clamp(1.5rem, 5vw, 5rem));
+    /* No padding-inline needed — parent .page-width + .vcat__container handles it */
   }
 
   /* ── Tablet: 3 columns ── */
@@ -208,9 +218,12 @@
       flex-direction: row;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
+      scroll-padding-inline: var(--vape-page-padding, 1.25rem);
       -webkit-overflow-scrolling: touch;
       scrollbar-width: none;
       gap: var(--vcat-gap, 16px);
+      /* Negative margin trick: pull track to container edges, re-add padding for content */
+      margin-inline: calc(-1 * var(--vape-page-padding, 1.25rem));
       padding-inline: var(--vape-page-padding, 1.25rem);
       padding-bottom: 0.5rem;
     }
@@ -218,7 +231,8 @@
     .vcat__track::-webkit-scrollbar { display: none; }
 
     .vcat__item {
-      flex: 0 0 calc(40% - var(--vcat-gap, 16px) / 2);
+      flex: 0 0 44%;
+      min-width: 130px;
       scroll-snap-align: start;
     }
   }
@@ -334,13 +348,14 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.25);
+    /* Dark dots — visible on white section backgrounds */
+    background: rgba(0, 0, 0, 0.2);
     transition: background 0.3s ease, transform 0.3s ease;
     cursor: pointer;
   }
 
   .vcat__dot--active {
-    background: rgba(255,255,255,0.9);
+    background: rgba(0, 0, 0, 0.65);
     transform: scale(1.4);
   }
 </style>

@@ -90,9 +90,34 @@
         "nav_position": "right",
         "aria_label": "Featured products slideshow"
       }
+    },
+    "vape_deal_banner_NgF7rh": {
+      "type": "vape-deal-banner",
+      "name": "Vape Deal Banner",
+      "settings": {
+        "product": "vape-pod",
+        "heading": "ENHANCE YOUR VAPING EXPERIENCE",
+        "heading_size": "medium",
+        "subheading": "",
+        "button_text": "SHOP NOW",
+        "button_url": "",
+        "show_countdown": true,
+        "countdown_end_date": "2026-12-31T23:59:59",
+        "enable_hover_animation": true,
+        "card_bg_color": "#f4f6f8",
+        "heading_color": "#111111",
+        "text_color": "#555555",
+        "btn_bg_color": "#cc0000",
+        "btn_text_color": "#ffffff",
+        "section_bg_color": "#080808",
+        "border_radius": 12,
+        "padding_top": 40,
+        "padding_bottom": 40
+      }
     }
   },
   "order": [
-    "vape_hero_slider_AXfAUt"
+    "vape_hero_slider_AXfAUt",
+    "vape_deal_banner_NgF7rh"
   ]
 }
